@@ -8,7 +8,24 @@ This repository is an official project repository of **PAICHAI NEXUS**, an inter
 
 ## Project Status
 
-🟡 Planning
+🟢 Active — Official University Event Deployment
+
+## First Official Deployment
+
+### The 24th Paichai University College of Business Academic Festival
+
+The first production deployment of NEXUS Event Platform will support the official College of Business Academic Festival.
+
+Initial operational scope:
+
+- QR participant check-in
+- Participant authentication
+- Live audience voting
+- Expert judging
+- Automated score aggregation
+- Result administration
+- Event analytics
+- Result export
 
 ## Objectives
 

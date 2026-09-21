@@ -1,5 +1,20 @@
 # nexus-event-platform
 
+<!-- NEXUS_PROJECT_META_START -->
+
+## Project Management
+
+| Field | Value |
+| --- | --- |
+| Status | 🟢 Active — Official University Event Deployment |
+| Project Lead | TBD |
+| Team / Support | PAICHAI NEXUS × 배재대학교 경영대학 |
+| Next Milestone | 제24회 경영대학 학술제 요구사항 확정 및 MVP 착수 |
+| Registry | [NEXUS Project Registry](https://github.com/paichai-nexus/nexus-project-registry) |
+
+<!-- NEXUS_PROJECT_META_END -->
+
+
 PAICHAI NEXUS Student Project
 
 ## Overview

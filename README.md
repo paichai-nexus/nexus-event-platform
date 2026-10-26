@@ -9,7 +9,7 @@
 | Field            | Value                                                                             |
 | ---------------- | --------------------------------------------------------------------------------- |
 | Status           | 🟢 Active — MVP Development                                                       |
-| Project Lead     | 이영준                                                                               |
+| Project Lead     | 담당자 비공개                                                                         |
 | Team / Support   | PAICHAI NEXUS × 배재대학교 경영대학                                                        |
 | First Deployment | 제24회 배재대학교 경영대학 학술제                                                               |
 | Event Date       | 2026년 11월 4일                                                                      |
@@ -86,12 +86,12 @@ NEXUS Event Platform은 별도 앱 설치 없이 스마트폰 웹 브라우저�
 
 | 역할                         | 담당자 | 주요 책임                          |
 | -------------------------- | --- | ------------------------------ |
-| Project Lead / Integration | 이영준 | 요구사항 통합, 기술 의사결정, 배포와 현장 기술 총괄 |
-| Development Lead           | 이서율 | 개발환경, GitHub, 코드 리뷰와 기술문서      |
-| PMO                        | 구민우 | 일정, 업무 현황과 협업 조정               |
-| Internal Review / QA       | 심승준 | 테스트, 공정성, 보안과 위험요소 검토          |
-| Design / UX                | 박하음 | 모바일·관리자 화면과 현장 시각자료            |
-| Business College Liaison   | 문시우 | 행사 규정 확인과 경영대학 의견 전달           |
+| Project Lead / Integration | 담당자 비공개 | 요구사항 통합, 기술 의사결정, 배포와 현장 기술 총괄 |
+| Development Lead           | 담당자 비공개 | 개발환경, GitHub, 코드 리뷰와 기술문서      |
+| PMO                        | 담당자 비공개 | 일정, 업무 현황과 협업 조정               |
+| Internal Review / QA       | 담당자 비공개 | 테스트, 공정성, 보안과 위험요소 검토          |
+| Design / UX                | 담당자 비공개 | 모바일·관리자 화면과 현장 시각자료            |
+| Business College Liaison   | 담당자 비공개 | 행사 규정 확인과 경영대학 의견 전달           |
 
 실제 기능별 개발 담당자는 참여 가능 시간과 기술 수준을 확인한 뒤 GitHub Issue 단위로 배정합니다.
 

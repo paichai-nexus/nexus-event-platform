@@ -1,19 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
+  reactStrictMode: true,
+  allowedDevOrigins: ["127.0.0.1", "localhost", "192.168.189.26", "192.168.191.73", "192.168.123.127", "192.168.191.134"],
   turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
+    root: process.cwd(),
   },
 };
 

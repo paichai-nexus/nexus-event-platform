@@ -1,29 +1,32 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { EventOpsProvider } from "@/features/event/context/EventOpsProvider";
+import { runtimeDisplayState } from "@/lib/config/runtime";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "./operations.css";
 
 export const metadata: Metadata = {
-  title: "NEXUS 경품 추첨",
-  description: "NEXUS 행사 경품 추첨 관리자 화면",
+  title: "제24회 배재대학교 경영대학 학술제",
+  description:
+    "2026 배재대학교 경영대학 학술제 행사 안내, 프로그램, 본선 참가팀 및 청중평가 안내",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#07111d",
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const runtime = runtimeDisplayState();
+  const providerMode = runtime.valid && runtime.mode !== "unconfigured" ? runtime.mode : "production";
   return (
-    <html
-      lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="ko">
+      <body>
+        <div className={`runtime-mode runtime-mode--${runtime.valid ? runtime.mode : "error"}`} role={runtime.valid ? "status" : "alert"}>
+          {runtime.label}
+        </div>
+        <EventOpsProvider runtimeMode={providerMode}>{children}</EventOpsProvider>
+      </body>
     </html>
   );
 }

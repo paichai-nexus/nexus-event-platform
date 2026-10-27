@@ -42,16 +42,16 @@ export function ScoringDiagnosticsPanel({ eventId }: { eventId: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    setReport(null);
-    setError(null);
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)) {
-      setError("조회할 행사 ID가 확인되지 않았습니다.");
-      setLoading(false);
-      return () => controller.abort();
-    }
-    setLoading(true);
     void (async () => {
       try {
+        setReport(null);
+        setError(null);
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)) {
+          setError("조회할 행사 ID가 확인되지 않았습니다.");
+          setLoading(false);
+          return;
+        }
+        setLoading(true);
         const response = await fetch(`/api/scoring/diagnostics?eventId=${encodeURIComponent(eventId)}`, {
           credentials: "same-origin", cache: "no-store", signal: controller.signal,
         });

@@ -1,6 +1,7 @@
 "use client";
 
 import { DataTable } from "@/components/ui/DataTable";
+import { ScoringDiagnosticsPanel } from "@/components/ScoringDiagnosticsPanel";
 import { OperationAlert } from "@/components/ui/OperationAlert";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -11,15 +12,16 @@ import { EVALUATION_POLICY, SCORING_POLICY_READY } from "@/features/scoring/data
 
 export default function ScoringPage() {
   const { state } = useEventOps();
-  const rows = calculateScoreRows(state.scoreInputs);
+  const rows = state.runtimeMode === "mock" ? calculateScoreRows(state.scoreInputs) : [];
   const productionResult = calculateScoringResult(state.scoreInputs, SCORING_POLICY_READY);
   const hasTie = rows.some((row) => row.tied);
   const tieCount = rows.filter((row) => row.tied).length;
   const submittedJudges = state.judgeProgress.filter((judge) => judge.completed === judge.total).length;
-  const judgeRate = Math.round((submittedJudges / state.judgeProgress.length) * 100);
+  const judgeRate = state.judgeProgress.length ? Math.round((submittedJudges / state.judgeProgress.length) * 100) : 0;
   return (
     <div className="admin-page">
       <SectionLabel label="SCORING" title="최종 점수 집계" description="전문심사 80% · 청중평가 20% · 읽기 전용 계산" />
+      {state.runtimeMode !== "mock" && <ScoringDiagnosticsPanel eventId={state.eventId} />}
       <section className="scoring-rule"><div><small>SCORING RULE</small><strong>전문심사 <b>{PROFESSIONAL_WEIGHT * 100}%</b></strong><strong>청중평가 <b>{AUDIENCE_WEIGHT * 100}%</b></strong></div><p>운영 화면에서 비율을 변경할 수 없습니다.</p></section>
       {productionResult.status === "SCORING_BLOCKED" && <OperationAlert level="WARNING">{productionResult.reason} 아래 값은 UI 검증용 Mock Preview이며 결과를 확정할 수 없습니다.</OperationAlert>}
       {hasTie && <OperationAlert level="CRITICAL">동점 팀이 존재합니다. 공식 동점 처리 규정을 확인하세요.</OperationAlert>}

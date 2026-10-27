@@ -5,6 +5,7 @@ import { getPrizeRepository } from "@/lib/repositories/repositoryFactory";
 import { CheckInService } from "@/features/check-in/services/checkInService";
 import { EventControlService } from "@/features/event/services/eventControlService";
 import { PrizeService } from "@/features/prize/services/prizeService";
+import { requireRuntimeMode } from "@/lib/config/runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
       getJudgeRepository().getProgress(event.eventId),
     ]);
     return Response.json(
-      { ok: true, data: { ...checkIn, ...event, serverTime: new Date().toISOString(), prizeHistory, teams, prizeCatalog, voteCount: votes.totalVotes, voteByTeam: votes.teams, judgeProgress } },
+      { ok: true, runtimeMode: requireRuntimeMode(), data: { ...checkIn, ...event, serverTime: new Date().toISOString(), prizeHistory, teams, prizeCatalog, voteCount: votes.totalVotes, voteByTeam: votes.teams, judgeProgress } },
       { headers: { "Cache-Control": "no-store, max-age=0" } },
     );
   } catch (error) {

@@ -53,4 +53,8 @@ export class MockJudgeRepository implements JudgeRepository {
   async getProgress() {
     return [{ id: "Judge 01", completed: [...workspaces().values()].filter((item) => item.status === "SUBMITTED").length, total: 1 }];
   }
+
+  async unlock() {
+    throw new DomainError("NOT_FOUND", "서버 Mock에는 실제 심사 제출 데이터가 없습니다.", 404);
+  }
 }

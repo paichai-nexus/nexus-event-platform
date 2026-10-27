@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isValidAttendanceExitPass } from "@/lib/attendance/exitPass";
+import { isValidAttendanceEntryPass, isValidAttendanceExitPass } from "@/lib/attendance/exitPass";
 import { DomainError } from "@/lib/errors/domainError";
 import { toErrorResponse } from "@/lib/errors/domainError";
 import { getAttendanceRepository } from "@/lib/repositories/repositoryFactory";
@@ -42,6 +42,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => null) as { entryPass?: string } | null;
+    if (!isValidAttendanceEntryPass(body?.entryPass)) {
+      throw new DomainError("FORBIDDEN", "입장 QR이 만료되었거나 올바르지 않습니다. 안내 화면의 새 QR을 다시 스캔해주세요.", 403);
+    }
     const token = sessionToken(request);
     const data = await getAttendanceRepository().enter(token, getEventId(request));
     return responseWithSession(data, token);

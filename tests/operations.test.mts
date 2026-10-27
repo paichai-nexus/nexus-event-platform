@@ -10,6 +10,50 @@ import { COMMON_DOCUMENT_CRITERIA, DOCUMENT_SCORING_POLICY, PRESENTATION_DOCUMEN
 import { canTransitionEvent } from "../features/event/lib/eventStateMachine.ts";
 import { hasRequiredRole } from "../lib/auth/roles.ts";
 import { readAudienceSessionToken } from "../lib/attendance/sessionCookie.ts";
+import { evaluateRuntimePolicy } from "../lib/config/runtimePolicy.ts";
+
+test("runtime is fail-closed unless a mode is explicitly and safely configured", () => {
+  assert.equal(evaluateRuntimePolicy({}).ok, false);
+  assert.equal(evaluateRuntimePolicy({ APP_RUNTIME_MODE: "mock" }).ok, false);
+  assert.equal(evaluateRuntimePolicy({ APP_RUNTIME_MODE: "mock", ALLOW_MOCK_RUNTIME: "true", NODE_ENV: "production" }).ok, false);
+  assert.deepEqual(
+    evaluateRuntimePolicy({ APP_RUNTIME_MODE: "mock", ALLOW_MOCK_RUNTIME: "true", NODE_ENV: "development" }),
+    { ok: true, mode: "mock", usesMockData: true },
+  );
+  assert.equal(evaluateRuntimePolicy({ APP_RUNTIME_MODE: "staging" }).ok, false);
+  assert.equal(evaluateRuntimePolicy({ APP_RUNTIME_MODE: "postgres-test" }).ok, false);
+  assert.equal(evaluateRuntimePolicy({
+    APP_RUNTIME_MODE: "postgres-test",
+    ALLOW_POSTGRES_TEST_RUNTIME: "true",
+    P0B_POSTGRES_URL: "postgresql://database.example/nexus_p0b_test",
+    P0B_TEST_AUTH_SECRET: "0123456789abcdef0123456789abcdef",
+    ATTENDANCE_EXIT_SECRET: "0123456789abcdef0123456789abcdef",
+  }).ok, false);
+  assert.deepEqual(evaluateRuntimePolicy({
+    APP_RUNTIME_MODE: "postgres-test",
+    ALLOW_POSTGRES_TEST_RUNTIME: "true",
+    NODE_ENV: "development",
+    P0B_POSTGRES_URL: "postgresql://127.0.0.1:5432/nexus_p0b_test",
+    P0B_TEST_AUTH_SECRET: "0123456789abcdef0123456789abcdef",
+    ATTENDANCE_EXIT_SECRET: "0123456789abcdef0123456789abcdef",
+  }), { ok: true, mode: "postgres-test", usesMockData: false });
+  assert.equal(evaluateRuntimePolicy({
+    APP_RUNTIME_MODE: "postgres-test",
+    ALLOW_POSTGRES_TEST_RUNTIME: "true",
+    NODE_ENV: "production",
+    P0B_POSTGRES_URL: "postgresql://127.0.0.1:5432/nexus_p0b_test",
+    P0B_TEST_AUTH_SECRET: "0123456789abcdef0123456789abcdef",
+    ATTENDANCE_EXIT_SECRET: "0123456789abcdef0123456789abcdef",
+  }).ok, false);
+  assert.equal(evaluateRuntimePolicy({
+    APP_RUNTIME_MODE: "staging",
+    NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
+    SUPABASE_SERVICE_ROLE_KEY: "test-service-key",
+    APP_BASE_URL: "http://127.0.0.1:3000",
+    ATTENDANCE_EXIT_SECRET: "0123456789abcdef0123456789abcdef",
+  }).ok, true);
+});
 
 test("admin authorization rejects inactive and unapproved roles", () => {
   assert.equal(hasRequiredRole("ADMIN", true, ["ADMIN"]), true);
@@ -147,6 +191,16 @@ test("persistent voting migration enforces event isolation, close checks, and id
   assert.match(sql, /on conflict \(vote_session_id, participant_id\) do update/);
   assert.match(sql, /RESULT_FINALIZED/);
   assert.match(sql, /judge_score_revisions/);
+});
+
+test("fail-closed migration removes direct browser access and rejects duplicate votes", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/013_fail_closed_public_access.sql", import.meta.url), "utf8");
+  assert.match(sql, /drop policy if exists events_public_read/);
+  assert.match(sql, /revoke select on public\.events, public\.teams from anon/);
+  assert.match(sql, /revoke execute on function public\.submit_audience_vote\(uuid, text\) from anon, authenticated/);
+  assert.match(sql, /grant execute on function public\.submit_audience_vote\(uuid, text\) to service_role/);
+  assert.match(sql, /exception when unique_violation/);
+  assert.match(sql, /ALREADY_SUBMITTED/);
 });
 
 test("document totals do not mathematically equal an exact 70/30 split", () => {

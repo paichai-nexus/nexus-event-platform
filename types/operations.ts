@@ -5,6 +5,8 @@ import type { PrizeDefinition, PrizeRecord } from "@/types/prize";
 import type { ScoreInput } from "@/types/scoring";
 import type { Team } from "@/types/team";
 import type { VotingStatus } from "@/types/voting";
+import type { AudienceVoteTeamCount } from "@/types/voting";
+import type { RuntimeMode } from "@/lib/config/runtimePolicy";
 
 export type Activity = {
   id: string;
@@ -14,6 +16,9 @@ export type Activity = {
 };
 
 export type EventOpsState = {
+  runtimeMode: RuntimeMode;
+  snapshotReady: boolean;
+  snapshotError: boolean;
   eventId: string;
   mode: EventMode;
   status: EventStatus;
@@ -21,6 +26,7 @@ export type EventOpsState = {
   registeredCount: number;
   checkInCount: number;
   voteCount: number;
+  voteByTeam: AudienceVoteTeamCount[];
   votingStatus: VotingStatus;
   snapshotVersion: number;
   serverTime: string | null;

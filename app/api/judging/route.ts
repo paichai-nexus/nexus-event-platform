@@ -2,7 +2,7 @@ import { z } from "zod";
 import { authorizeRoles } from "@/lib/auth/authorize";
 import { DomainError, toErrorResponse } from "@/lib/errors/domainError";
 import { getEventControlRepository, getJudgeRepository } from "@/lib/repositories/repositoryFactory";
-import { isSupabaseConfigured } from "@/lib/config/runtime";
+import { usesPersistentStorage } from "@/lib/config/runtime";
 
 const scoreSchema = z.object({ criterionId: z.string().uuid(), score: z.number().finite().min(0) });
 const teamIdSchema = z.string().trim().min(1).max(100);
@@ -18,10 +18,10 @@ export async function GET(request: Request) {
     const event = await getEventControlRepository().getSnapshot(requestedEventId);
     if (workspace) {
       const data = await getJudgeRepository().getWorkspace(event.eventId, event.activeTeamId, actor.userId);
-      return Response.json({ ok: true, storage: isSupabaseConfigured() ? "DATABASE" : "MOCK", data });
+      return Response.json({ ok: true, storage: usesPersistentStorage() ? "DATABASE" : "MOCK", data });
     }
     const data = await getJudgeRepository().getProgress(event.eventId);
-    return Response.json({ ok: true, storage: isSupabaseConfigured() ? "DATABASE" : "MOCK", data });
+    return Response.json({ ok: true, storage: usesPersistentStorage() ? "DATABASE" : "MOCK", data });
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -10,12 +10,12 @@ export default function AudienceCheckInPage() {
   const [message, setMessage] = useState("QR 입장을 확인하고 있습니다.");
   const started = useRef(false);
 
-  const request = useCallback(async (method: "GET" | "POST" | "DELETE", exitPass?: string) => {
+  const request = useCallback(async (method: "GET" | "POST" | "DELETE", pass?: { entryPass?: string; exitPass?: string }) => {
     const response = await fetch("/api/attendance", {
       method,
       cache: "no-store",
-      headers: exitPass ? { "Content-Type": "application/json" } : undefined,
-      body: exitPass ? JSON.stringify({ exitPass }) : undefined,
+      headers: pass ? { "Content-Type": "application/json" } : undefined,
+      body: pass ? JSON.stringify(pass) : undefined,
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message ?? "입장 상태를 처리하지 못했습니다.");
@@ -27,18 +27,20 @@ export default function AudienceCheckInPage() {
     started.current = true;
     const enterFromQr = async () => {
       try {
-        const exitPass = new URLSearchParams(window.location.search).get("exitPass");
+        const params = new URLSearchParams(window.location.search);
+        const entryPass = params.get("entryPass");
+        const exitPass = params.get("exitPass");
         const current = await request("GET");
         setAttendance(current);
         if (exitPass) {
-          const next = current.active ? await request("DELETE", exitPass) : current;
+          const next = current.active ? await request("DELETE", { exitPass }) : current;
           setAttendance(next);
           setMessage(current.active ? "출구 QR이 확인되어 퇴장이 완료되었습니다." : "이미 퇴장 처리되어 있습니다.");
           return;
         }
-        const next = current.active || current.known ? current : await request("POST");
+        const next = current.active || !entryPass ? current : await request("POST", { entryPass });
         setAttendance(next);
-        setMessage(current.active ? "입장 중입니다. 퇴장할 때는 출구 전용 QR을 스캔해주세요." : current.known ? "퇴장 상태입니다. 다시 입장하려면 아래 버튼을 눌러주세요." : "입장이 완료되었습니다.");
+        setMessage(current.active ? "입장 중입니다. 퇴장할 때는 출구 전용 QR을 스캔해주세요." : entryPass ? "입장이 완료되었습니다." : current.known ? "퇴장 상태입니다. 다시 입장하려면 입장 QR을 스캔해주세요." : "행사장 안내 화면의 입장 QR을 스캔해주세요.");
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "입장 상태를 처리하지 못했습니다.");
       } finally {
@@ -48,20 +50,6 @@ export default function AudienceCheckInPage() {
     void enterFromQr();
   }, [request]);
 
-  const enterAgain = async () => {
-    setPending(true);
-    setMessage("입장 처리 중입니다.");
-    try {
-      const next = await request("POST");
-      setAttendance(next);
-      setMessage("입장이 완료되었습니다.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "입장 처리에 실패했습니다.");
-    } finally {
-      setPending(false);
-    }
-  };
-
   const enteredTime = attendance?.enteredAt
     ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(attendance.enteredAt))
     : null;
@@ -70,9 +58,9 @@ export default function AudienceCheckInPage() {
     <main className="audience-entry-page">
       <section className={`audience-entry-card ${attendance?.active ? "is-active" : ""}`}>
         <Link href="/" className="audience-entry-back">← 행사 안내</Link>
-        <div className="audience-entry-mark" aria-hidden="true">{pending ? "…" : attendance?.active ? "✓" : "↳"}</div>
+        <div className="audience-entry-mark" aria-hidden="true">{pending ? "…" : attendance?.active ? "✓" : attendance?.known ? "↳" : "⌁"}</div>
         <small>ACADEMIC FESTIVAL · QR CHECK-IN</small>
-        <h1>{pending ? "입장 확인 중" : attendance?.active ? "입장 완료" : "퇴장 완료"}</h1>
+        <h1>{pending ? "입장 확인 중" : attendance?.active ? "입장 완료" : attendance?.known ? "퇴장 완료" : "입장 대기"}</h1>
         <p className="audience-entry-message" role="status" aria-live="polite">{message}</p>
         {attendance && (
           <dl className="audience-entry-info">
@@ -83,9 +71,7 @@ export default function AudienceCheckInPage() {
         )}
         {attendance?.active ? (
           <div className="audience-entry-exit-locked"><span aria-hidden="true">⌁</span><strong>퇴장은 출구 QR 전용</strong><small>출구에 표시된 QR을 카메라로 스캔해주세요.</small></div>
-        ) : (
-          <button className="audience-entry-button" type="button" disabled={pending} onClick={enterAgain}>다시 입장하기</button>
-        )}
+        ) : <div className="audience-entry-exit-locked"><span aria-hidden="true">⌁</span><strong>입장 QR 스캔 필요</strong><small>행사장 안내 화면의 최신 QR을 카메라로 스캔해주세요.</small></div>}
         <p className="audience-entry-note">화면 캡처나 일반 입장 QR로는 퇴장할 수 없습니다.</p>
       </section>
     </main>

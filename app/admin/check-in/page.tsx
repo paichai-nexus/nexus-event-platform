@@ -7,6 +7,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useEventOps } from "@/features/event/context/EventOpsProvider";
 import { ExitQrPanel } from "@/features/check-in/components/ExitQrPanel";
+import { EntryQrPanel } from "@/features/check-in/components/EntryQrPanel";
 
 const resultCopy = {
   IDLE: ["QR 또는 코드를 입력하세요", "입장 결과가 여기에 표시됩니다."],
@@ -51,6 +52,7 @@ export default function CheckInPage() {
           </div>
         </section>
         <aside className="checkin-side">
+          <EntryQrPanel />
           <ExitQrPanel />
           <section className="stat-grid stat-grid--2 checkin-stats">
             <StatCard label="전체 등록" value={state.registeredCount} detail="명" icon="◫" />

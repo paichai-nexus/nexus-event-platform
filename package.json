@@ -7,7 +7,12 @@
     "build": "next build --webpack",
     "start": "next start -H 0.0.0.0",
     "lint": "eslint .",
-    "test": "node --test --experimental-strip-types tests/*.test.mts"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types tests/*.test.mts",
+    "test:migrations": "node scripts/validate-migrations.mjs",
+    "test:secrets": "node scripts/scan-secrets.mjs",
+    "test:db": "bash scripts/run-p0a-db-validation.sh",
+    "test:p0b": "bash scripts/run-p0b-http-integration.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

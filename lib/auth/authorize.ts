@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/config/runtime";
+import { isMockRuntime, isPostgresTestRuntime } from "@/lib/config/runtime";
+import { authorizePostgresTestActor } from "@/lib/integration/postgresTest";
 import { DomainError } from "@/lib/errors/domainError";
 import { hasRequiredRole, type StaffRole } from "@/lib/auth/roles";
 
@@ -14,9 +15,10 @@ export type AuthorizedActor<TRole extends StaffRole = StaffRole> = {
 };
 
 export async function authorizeRoles<const TRoles extends readonly StaffRole[]>(roles: TRoles): Promise<AuthorizedActor<TRoles[number]>> {
-  if (!isSupabaseConfigured()) {
+  if (isMockRuntime()) {
     return { userId: "00000000-0000-4000-8000-000000000001", role: roles[0], mock: true };
   }
+  if (isPostgresTestRuntime()) return authorizePostgresTestActor(roles);
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) throw new DomainError("DATABASE_ERROR", "Supabase 설정을 확인해주세요.", 503);

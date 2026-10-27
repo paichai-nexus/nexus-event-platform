@@ -29,7 +29,7 @@ returns uuid
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select id
   from public.events
@@ -43,7 +43,7 @@ create function public.get_audience_attendance(p_event_id uuid, p_session_token 
 returns table (known boolean, active boolean, participant_id text, entered_at timestamptz, active_count bigint)
 language sql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   with selected_event as (
     select public.resolve_attendance_event(p_event_id) as event_id
@@ -68,7 +68,7 @@ create function public.enter_audience_attendance(p_event_id uuid, p_session_toke
 returns table (known boolean, active boolean, participant_id text, entered_at timestamptz, active_count bigint)
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_event_id uuid;
@@ -92,7 +92,7 @@ create function public.exit_audience_attendance(p_event_id uuid, p_session_token
 returns table (known boolean, active boolean, participant_id text, entered_at timestamptz, active_count bigint)
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_event_id uuid;
@@ -123,7 +123,7 @@ create or replace function public.reset_rehearsal_event(p_event_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_mode public.event_mode;

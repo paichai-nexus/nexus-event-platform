@@ -2,7 +2,7 @@ import "server-only";
 
 import { DomainError } from "@/lib/errors/domainError";
 import type { AttendanceRepository } from "@/lib/repositories/attendanceRepository";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { AudienceAttendanceState } from "@/types/attendance";
 
 type AttendanceRpcRow = {
@@ -27,7 +27,7 @@ function toAttendanceState(data: unknown): AudienceAttendanceState {
 
 export class SupabaseAttendanceRepository implements AttendanceRepository {
   private async execute(action: "get_audience_attendance" | "enter_audience_attendance" | "exit_audience_attendance", sessionToken: string, eventId?: string) {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
     if (!supabase) throw new DomainError("DATABASE_ERROR", "Supabase 설정을 확인해주세요.", 503);
     const { data, error } = await supabase.rpc(action, {
       p_event_id: eventId ?? null,

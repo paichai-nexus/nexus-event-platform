@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { RuntimeMode } from "@/lib/config/runtimePolicy";
 
 const navigation = [
   ["▦", "Dashboard", "운영 현황", "/admin/dashboard"],
@@ -19,7 +20,7 @@ const navigation = [
   ["⚙", "설정", "행사 운영 모드", "/admin/settings"],
 ];
 
-export function AdminSidebar({ open, onClose, dataSource }: { open: boolean; onClose: () => void; dataSource: "SUPABASE" | "SERVER MOCK" }) {
+export function AdminSidebar({ open, onClose, runtimeMode }: { open: boolean; onClose: () => void; runtimeMode: RuntimeMode }) {
   const pathname = usePathname();
   return (
     <aside className={`admin-sidebar ${open ? "admin-sidebar--open" : ""}`} aria-label="관리자 메뉴">
@@ -32,8 +33,8 @@ export function AdminSidebar({ open, onClose, dataSource }: { open: boolean; onC
         ))}
       </nav>
       <div className="admin-sidebar__foot">
-        <span>{dataSource}</span>
-        <small>{dataSource === "SUPABASE" ? "Backend connected" : "Process-local fallback"}</small>
+        <span>{runtimeMode.toUpperCase()}</span>
+        <small>{runtimeMode === "mock" ? "Explicit local mock" : "Supabase persistent storage"}</small>
       </div>
     </aside>
   );

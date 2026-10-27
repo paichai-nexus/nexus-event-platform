@@ -137,7 +137,7 @@ using (
 
 create function public.capture_judge_score_revision()
 returns trigger
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   next_revision integer;
   current_unlock_count integer;
@@ -167,7 +167,7 @@ for each row execute function public.capture_judge_score_revision();
 
 create or replace function public.enter_audience_attendance(p_event_id uuid, p_session_token text)
 returns table (known boolean, active boolean, participant_id text, entered_at timestamptz, active_count bigint)
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   selected_event_id uuid;
   token_hash text;
@@ -209,7 +209,7 @@ returns table (
   submission_id uuid,
   submitted_at timestamptz
 )
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   selected_event public.events%rowtype;
   selected_event_id uuid;
@@ -247,7 +247,7 @@ $$;
 
 create function public.submit_audience_vote(p_event_id uuid, p_session_token text)
 returns public.audience_submissions
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   selected_event public.events%rowtype;
   selected_session public.team_vote_sessions%rowtype;
@@ -296,7 +296,7 @@ $$;
 
 create function public.get_audience_vote_snapshot(p_event_id uuid)
 returns table (team_id uuid, vote_count bigint, eligibility_count integer)
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 begin
   if coalesce(public.current_app_role() in ('ADMIN', 'STAFF'), false) = false then raise exception 'FORBIDDEN'; end if;
   return query
@@ -310,7 +310,7 @@ $$;
 
 create function public.save_judge_scores(p_event_id uuid, p_team_id uuid, p_scores jsonb)
 returns public.judge_submissions
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   selected_event public.events%rowtype;
   saved_submission public.judge_submissions%rowtype;
@@ -360,7 +360,7 @@ $$;
 
 create function public.submit_judge_scores(p_event_id uuid, p_team_id uuid)
 returns public.judge_submissions
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   selected_event public.events%rowtype;
   saved_submission public.judge_submissions%rowtype;
@@ -401,7 +401,7 @@ $$;
 
 create or replace function public.unlock_judge_submission(p_submission_id uuid, p_reason text)
 returns public.judge_submissions
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   saved_submission public.judge_submissions%rowtype;
   selected_event public.events%rowtype;

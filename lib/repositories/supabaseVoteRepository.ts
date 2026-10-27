@@ -2,6 +2,7 @@ import "server-only";
 
 import { DomainError } from "@/lib/errors/domainError";
 import type { VoteRepository } from "@/lib/repositories/voteRepository";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AudienceVoteSnapshot, AudienceVoteState, VotingStatus } from "@/types/voting";
 
@@ -26,14 +27,20 @@ function toState(data: unknown): AudienceVoteState {
 }
 
 export class SupabaseVoteRepository implements VoteRepository {
-  private async client() {
+  private audienceClient() {
+    const client = createSupabaseAdminClient();
+    if (!client) throw new DomainError("DATABASE_ERROR", "Supabase 설정을 확인해주세요.", 503);
+    return client;
+  }
+
+  private async staffClient() {
     const client = await createSupabaseServerClient();
     if (!client) throw new DomainError("DATABASE_ERROR", "Supabase 설정을 확인해주세요.", 503);
     return client;
   }
 
   async getState(eventId: string | undefined, sessionToken: string) {
-    const supabase = await this.client();
+    const supabase = this.audienceClient();
     const { data, error } = await supabase.rpc("get_audience_vote_state", {
       p_event_id: eventId ?? null,
       p_session_token: sessionToken,
@@ -43,7 +50,7 @@ export class SupabaseVoteRepository implements VoteRepository {
   }
 
   async submit(eventId: string | undefined, sessionToken: string) {
-    const supabase = await this.client();
+    const supabase = this.audienceClient();
     const { error } = await supabase.rpc("submit_audience_vote", {
       p_event_id: eventId ?? null,
       p_session_token: sessionToken,
@@ -52,13 +59,14 @@ export class SupabaseVoteRepository implements VoteRepository {
       const message = error.message ?? "";
       if (message.includes("VOTING_CLOSED")) throw new DomainError("EVENT_CLOSED", "현재 투표가 열려 있지 않습니다.", 409);
       if (message.includes("NOT_ELIGIBLE")) throw new DomainError("FORBIDDEN", "현장 입장을 완료한 참가자만 투표할 수 있습니다.", 403);
+      if (message.includes("ALREADY_SUBMITTED")) throw new DomainError("ALREADY_SUBMITTED", "이미 해당 발표팀 평가를 제출했습니다.", 409);
       throw new DomainError("DATABASE_ERROR", "투표를 저장하지 못했습니다.", 500);
     }
     return this.getState(eventId, sessionToken);
   }
 
   async getSnapshot(eventId: string): Promise<AudienceVoteSnapshot> {
-    const supabase = await this.client();
+    const supabase = await this.staffClient();
     const { data, error } = await supabase.rpc("get_audience_vote_snapshot", { p_event_id: eventId });
     if (error) throw new DomainError("DATABASE_ERROR", "투표 집계를 확인하지 못했습니다.", 500);
     const teams = ((data ?? []) as Array<{ team_id: string; vote_count: number; eligibility_count: number }>).map((row) => ({

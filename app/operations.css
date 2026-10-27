@@ -511,6 +511,12 @@
 .exit-qr-panel > strong { display: block; color: #ffd06c; font-size: .75rem; }
 .exit-qr-panel > p { margin: 5px auto 11px; color: var(--muted); font-size: .58rem; line-height: 1.55; }
 .exit-qr-panel > button { width: 100%; }
+.entry-qr-panel { text-align: center; }
+.entry-qr-panel__image { display: block; width: min(100%, 260px); height: auto; margin: 4px auto 12px; padding: 8px; background: white; }
+.entry-qr-panel__loading { display: grid; min-height: 210px; place-items: center; color: var(--muted); }
+.entry-qr-panel > strong { display: block; color: #6cdba4; font-size: .75rem; }
+.entry-qr-panel > p { margin: 5px auto 7px; color: var(--muted); font-size: .58rem; line-height: 1.55; }
+.entry-qr-panel > button { width: 100%; }
 .scanner-placeholder { min-height: 230px; border-style: solid; background: radial-gradient(circle, rgba(8,126,245,.09), transparent 45%), repeating-linear-gradient(45deg, rgba(8,126,245,.025) 0 10px, transparent 10px 20px); }
 .scan-frame { position: relative; display: grid; width: 112px; height: 112px; margin: auto; place-items: center; }
 .scan-frame i { position: absolute; width: 28px; height: 28px; border-color: var(--blue-bright); border-style: solid; }

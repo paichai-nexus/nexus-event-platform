@@ -83,4 +83,19 @@ export class SupabaseJudgeRepository implements JudgeRepository {
     }
     return [...progress.values()];
   }
+
+  async unlock(submissionId: string, reason: string) {
+    const supabase = await this.client();
+    const { data, error } = await supabase.rpc("unlock_judge_submission", {
+      p_submission_id: submissionId,
+      p_reason: reason,
+    });
+    if (error || !data) {
+      if (error?.message?.includes("RESULT_FINALIZED")) {
+        throw new DomainError("EVENT_CLOSED", "결과 확정 이후에는 잠금을 해제할 수 없습니다.", 409);
+      }
+      throw new DomainError("DATABASE_ERROR", "심사 제출 잠금을 해제하지 못했습니다.", 500);
+    }
+    return data;
+  }
 }

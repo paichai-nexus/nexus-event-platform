@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { EventOpsProvider } from "@/features/event/context/EventOpsProvider";
+import { runtimeDisplayState } from "@/lib/config/runtime";
 import "./globals.css";
 import "./operations.css";
 
@@ -16,9 +17,16 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const runtime = runtimeDisplayState();
+  const providerMode = runtime.valid && runtime.mode !== "unconfigured" ? runtime.mode : "production";
   return (
     <html lang="ko">
-      <body><EventOpsProvider>{children}</EventOpsProvider></body>
+      <body>
+        <div className={`runtime-mode runtime-mode--${runtime.valid ? runtime.mode : "error"}`} role={runtime.valid ? "status" : "alert"}>
+          {runtime.label}
+        </div>
+        <EventOpsProvider runtimeMode={providerMode}>{children}</EventOpsProvider>
+      </body>
     </html>
   );
 }

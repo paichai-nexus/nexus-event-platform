@@ -27,9 +27,10 @@ export default function DashboardPage() {
   const [controlBusy, setControlBusy] = useState(false);
   const [controlFeedback, setControlFeedback] = useState("");
   const promotedTeam = promotedTeams[promotionIndex % Math.max(promotedTeams.length, 1)];
-  const checkInPercent = Math.round((state.checkInCount / state.registeredCount) * 100);
-  const votePercent = Math.round((state.voteCount / state.checkInCount) * 100);
-  const judgePercent = Math.round((submittedJudges / state.judgeProgress.length) * 100);
+  const activeVote = state.activeTeamId ? state.voteByTeam.find((team) => team.teamId === state.activeTeamId) : undefined;
+  const checkInPercent = state.registeredCount ? Math.round((state.checkInCount / state.registeredCount) * 100) : 0;
+  const votePercent = activeVote?.eligibilityCount ? Math.round((activeVote.voteCount / activeVote.eligibilityCount) * 100) : 0;
+  const judgePercent = state.judgeProgress.length ? Math.round((submittedJudges / state.judgeProgress.length) * 100) : 0;
   const runControl = async (action: () => Promise<boolean>, success: string) => {
     setControlBusy(true);
     setControlFeedback("");
@@ -98,7 +99,7 @@ export default function DashboardPage() {
       <section className="stat-grid stat-grid--6" aria-label="핵심 운영 수치">
         <StatCard label="전체 등록" value={state.registeredCount} detail="명" icon="✦" />
         <StatCard label="입장 완료" value={state.checkInCount} detail={`/ ${state.registeredCount} · ${checkInPercent}%`} accent icon="↳" progress={checkInPercent} />
-        <StatCard label="청중평가" value={state.voteCount} detail={`/ ${state.checkInCount} · ${votePercent}%`} icon="◎" progress={votePercent} />
+        <StatCard label="현재 팀 청중평가" value={activeVote?.voteCount ?? 0} detail={`/ ${activeVote?.eligibilityCount ?? 0} · ${votePercent}%`} icon="◎" progress={votePercent} />
         <StatCard label="심사 제출" value={`${submittedJudges} / ${state.judgeProgress.length}`} detail={`${judgePercent}% 완료`} icon="✎" progress={judgePercent} />
         <StatCard label="본선 팀" value={registeredTeams.length} detail={`/ ${state.teams.length} 슬롯`} icon="◫" />
         <StatCard label="운영 알림" value={alertCount} detail="건 확인 필요" icon="!" />
@@ -106,7 +107,7 @@ export default function DashboardPage() {
 
       <section className="admin-grid admin-grid--3">
         <ProgressCard label="CHECK-IN" value={state.checkInCount} total={state.registeredCount} />
-        <ProgressCard label="AUDIENCE VOTE" value={state.voteCount} total={state.checkInCount} />
+        <ProgressCard label="AUDIENCE VOTE" value={activeVote?.voteCount ?? 0} total={activeVote?.eligibilityCount ?? 0} />
         <ProgressCard label="JUDGE STATUS" value={submittedJudges} total={state.judgeProgress.length} />
       </section>
 

@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  pull_request:
+  push: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: Application and security checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_RUNTIME_MODE: production
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+      APP_BASE_URL: https://ci.invalid
+      ATTENDANCE_EXIT_SECRET: ci-only-placeholder-32-characters-minimum
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Migration static validation
+        run: npm run test:migrations
+
+      - name: Secret scanning
+        run: npm run test:secrets
+
+      - name: Production build
+        run: npm run build
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+  database:
+    name: Isolated PostgreSQL migration and RLS checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      P0A_POSTGRES_URL_TEMPLATE: postgresql://postgres:postgres@127.0.0.1:5432/__DATABASE__
+      P0A_ALLOW_ISOLATED_DATABASES: "true"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Validate empty and 010-upgrade paths
+        run: bash scripts/run-p0a-db-validation.sh
+
+  application-integration:
+    name: P0-B HTTP and PostgreSQL integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      P0B_POSTGRES_URL_TEMPLATE: postgresql://postgres:postgres@127.0.0.1:5432/__DATABASE__
+      P0B_ALLOW_ISOLATED_DATABASES: "true"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Exercise 12 audience and 3 judge HTTP flows
+        run: npm run test:p0b

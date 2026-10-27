@@ -1,6 +1,16 @@
 import "server-only";
 
-import { isSupabaseConfigured } from "@/lib/config/runtime";
+import { isMockRuntime, isPostgresTestRuntime } from "@/lib/config/runtime";
+import {
+  PostgresTestAttendanceRepository,
+  PostgresTestCheckInRepository,
+  PostgresTestEventControlRepository,
+  PostgresTestJudgeRepository,
+  PostgresTestPrizeCatalogRepository,
+  PostgresTestPrizeRepository,
+  PostgresTestTeamRepository,
+  PostgresTestVoteRepository,
+} from "@/lib/repositories/postgresTestRepositories";
 import type { CheckInRepository } from "@/lib/repositories/checkInRepository";
 import { MockCheckInRepository } from "@/lib/repositories/mockCheckInRepository";
 import { SupabaseCheckInRepository } from "@/lib/repositories/supabaseCheckInRepository";
@@ -33,41 +43,49 @@ import { MockJudgeRepository } from "@/lib/repositories/mockJudgeRepository";
 import { SupabaseJudgeRepository } from "@/lib/repositories/supabaseJudgeRepository";
 
 export function getCheckInRepository(): CheckInRepository {
-  return isSupabaseConfigured() ? new SupabaseCheckInRepository() : new MockCheckInRepository();
+  if (isMockRuntime()) return new MockCheckInRepository();
+  return isPostgresTestRuntime() ? new PostgresTestCheckInRepository() : new SupabaseCheckInRepository();
 }
 
 export function getEventControlRepository(): EventControlRepository {
-  return isSupabaseConfigured() ? new SupabaseEventControlRepository() : new MockEventControlRepository();
+  if (isMockRuntime()) return new MockEventControlRepository();
+  return isPostgresTestRuntime() ? new PostgresTestEventControlRepository() : new SupabaseEventControlRepository();
 }
 
 export function getPrizeRepository(): PrizeRepository {
-  return isSupabaseConfigured() ? new SupabasePrizeRepository() : new MockPrizeRepository();
+  if (isMockRuntime()) return new MockPrizeRepository();
+  return isPostgresTestRuntime() ? new PostgresTestPrizeRepository() : new SupabasePrizeRepository();
 }
 
 export function getAttendanceRepository(): AttendanceRepository {
-  return isSupabaseConfigured() ? new SupabaseAttendanceRepository() : new MockAttendanceRepository();
+  if (isMockRuntime()) return new MockAttendanceRepository();
+  return isPostgresTestRuntime() ? new PostgresTestAttendanceRepository() : new SupabaseAttendanceRepository();
 }
 
 export function getTeamRepository(): TeamRepository {
-  return isSupabaseConfigured() ? new SupabaseTeamRepository() : new MockTeamRepository();
+  if (isMockRuntime()) return new MockTeamRepository();
+  return isPostgresTestRuntime() ? new PostgresTestTeamRepository() : new SupabaseTeamRepository();
 }
 
 export function getPrizeCatalogRepository(): PrizeCatalogRepository {
-  return isSupabaseConfigured() ? new SupabasePrizeCatalogRepository() : new MockPrizeCatalogRepository();
+  if (isMockRuntime()) return new MockPrizeCatalogRepository();
+  return isPostgresTestRuntime() ? new PostgresTestPrizeCatalogRepository() : new SupabasePrizeCatalogRepository();
 }
 
 export function getMissionRepository(): MissionRepository {
-  return isSupabaseConfigured() ? new SupabaseMissionRepository() : new MockMissionRepository();
+  return isMockRuntime() ? new MockMissionRepository() : new SupabaseMissionRepository();
 }
 
 export function getPromoVideoRepository(): PromoVideoRepository {
-  return isSupabaseConfigured() ? new SupabasePromoVideoRepository() : new MockPromoVideoRepository();
+  return isMockRuntime() ? new MockPromoVideoRepository() : new SupabasePromoVideoRepository();
 }
 
 export function getVoteRepository(): VoteRepository {
-  return isSupabaseConfigured() ? new SupabaseVoteRepository() : new MockVoteRepository();
+  if (isMockRuntime()) return new MockVoteRepository();
+  return isPostgresTestRuntime() ? new PostgresTestVoteRepository() : new SupabaseVoteRepository();
 }
 
 export function getJudgeRepository(): JudgeRepository {
-  return isSupabaseConfigured() ? new SupabaseJudgeRepository() : new MockJudgeRepository();
+  if (isMockRuntime()) return new MockJudgeRepository();
+  return isPostgresTestRuntime() ? new PostgresTestJudgeRepository() : new SupabaseJudgeRepository();
 }

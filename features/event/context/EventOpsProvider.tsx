@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
-import { INITIAL_EVENT_STATE } from "@/features/event/data/mockEventStore";
+import { EMPTY_EVENT_STATE, INITIAL_EVENT_STATE } from "@/features/event/data/mockEventStore";
 import { canSubmitVote, nextPrizeWinner } from "@/features/event/lib/mockOperations";
 import type { DisplayMode, EventMode, EventStatus, NetworkState, ResultStatus } from "@/types/event";
 import type { CheckInRecord, CheckInResult } from "@/types/check-in";
@@ -9,6 +9,7 @@ import type { EventOpsState } from "@/types/operations";
 import type { VotingStatus } from "@/types/voting";
 import type { PrizeDefinition, PrizeDefinitionUpdate, PrizeRecord } from "@/types/prize";
 import type { Team, TeamUpdate } from "@/types/team";
+import type { RuntimeMode } from "@/lib/config/runtimePolicy";
 
 type EventOpsAction =
   | { type: "CHECK_IN_PENDING" }
@@ -28,12 +29,14 @@ type EventOpsAction =
       registeredCount: number;
       checkInCount: number;
       voteCount: number;
+      voteByTeam: EventOpsState["voteByTeam"];
       checkIns: CheckInRecord[];
       prizeHistory: PrizeRecord[];
       prizeCatalog: PrizeDefinition[];
       teams: Team[];
       judgeProgress: EventOpsState["judgeProgress"];
     }
+  | { type: "SNAPSHOT_FAILED" }
   | { type: "SET_VOTING"; status: VotingStatus }
   | { type: "SUBMIT_VOTE"; teamId: string }
   | { type: "SUBMIT_JUDGE" }
@@ -102,12 +105,17 @@ export function eventOpsReducer(state: EventOpsState, action: EventOpsAction): E
         registeredCount: action.registeredCount,
         checkInCount: action.checkInCount,
         voteCount: action.voteCount,
+        voteByTeam: action.voteByTeam,
+        snapshotReady: true,
+        snapshotError: false,
         checkIns: action.checkIns,
         prizeHistory: action.prizeHistory,
         prizeCatalog: action.prizeCatalog,
         teams: action.teams,
         judgeProgress: action.judgeProgress,
       };
+    case "SNAPSHOT_FAILED":
+      return { ...state, snapshotError: true };
     case "SET_VOTING":
       return {
         ...state,
@@ -194,8 +202,9 @@ type EventOpsContextValue = {
 
 const EventOpsContext = createContext<EventOpsContextValue | null>(null);
 
-export function EventOpsProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(eventOpsReducer, INITIAL_EVENT_STATE);
+export function EventOpsProvider({ children, runtimeMode }: { children: React.ReactNode; runtimeMode: RuntimeMode }) {
+  const initialState = runtimeMode === "mock" ? INITIAL_EVENT_STATE : { ...EMPTY_EVENT_STATE, runtimeMode };
+  const [state, dispatch] = useReducer(eventOpsReducer, initialState);
   const inFlightRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const latestVersionRef = useRef(0);
@@ -206,8 +215,15 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
     inFlightRef.current = true;
     try {
       const response = await fetch("/api/event/snapshot", { cache: "no-store", signal: controller.signal });
-      if (!response.ok) return;
+      if (!response.ok) {
+        dispatch({ type: "SNAPSHOT_FAILED" });
+        return;
+      }
       const payload = await response.json();
+      if (payload.runtimeMode !== runtimeMode) {
+        dispatch({ type: "SNAPSHOT_FAILED" });
+        return;
+      }
       if (payload.data.version < latestVersionRef.current) return;
       latestVersionRef.current = payload.data.version;
       dispatch({
@@ -225,6 +241,7 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
         registeredCount: payload.data.registeredCount,
         checkInCount: payload.data.checkInCount,
         voteCount: payload.data.voteCount,
+        voteByTeam: payload.data.voteByTeam,
         judgeProgress: payload.data.judgeProgress,
         checkIns: payload.data.checkIns.map((record: CheckInRecord) => ({ ...record, time: formatSeoulTime(record.time) })),
         prizeHistory: payload.data.prizeHistory.map((record: PrizeRecord) => ({ ...record, drawnAt: formatSeoulTime(record.drawnAt) })),
@@ -232,12 +249,12 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
         teams: payload.data.teams,
       });
     } catch {
-      // Public pages and temporary network failures keep the existing snapshot usable.
+      dispatch({ type: "SNAPSHOT_FAILED" });
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
       inFlightRef.current = false;
     }
-  }, []);
+  }, [runtimeMode]);
 
   useEffect(() => {
     void refreshOperations();
@@ -276,6 +293,7 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<EventOpsContextValue>(() => ({
     state,
     checkIn: async (code) => {
+      if (!state.snapshotReady) return { status: "ERROR" };
       dispatch({ type: "CHECK_IN_PENDING" });
       try {
         const response = await fetch("/api/check-ins", {
@@ -311,14 +329,18 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
       }
     },
     refreshOperations,
-    setVotingStatus: async (status) => mutateEventControl({ action: "SET_VOTING", eventId: state.eventId, status }),
+    setVotingStatus: async (status) => state.snapshotReady && mutateEventControl({ action: "SET_VOTING", eventId: state.eventId, status }),
     submitVote: (teamId) => {
+      if (state.runtimeMode !== "mock") return false;
       const accepted = canSubmitVote(state.votingStatus, state.myVotedTeamIds, teamId);
       if (accepted) dispatch({ type: "SUBMIT_VOTE", teamId });
       return accepted;
     },
-    submitJudge: () => dispatch({ type: "SUBMIT_JUDGE" }),
+    submitJudge: () => {
+      if (state.runtimeMode === "mock") dispatch({ type: "SUBMIT_JUDGE" });
+    },
     drawPrize: async () => {
+      if (!state.snapshotReady) return null;
       try {
         const response = await fetch("/api/prizes", {
           method: "POST",
@@ -334,6 +356,7 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
       }
     },
     updateTeam: async (update) => {
+      if (!state.snapshotReady) return false;
       try {
         const response = await fetch("/api/teams", {
           method: "PATCH",
@@ -348,6 +371,7 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
       }
     },
     updatePrizeDefinition: async (update) => {
+      if (!state.snapshotReady) return false;
       try {
         const response = await fetch("/api/prize-catalog", {
           method: "PUT",
@@ -361,19 +385,16 @@ export function EventOpsProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    setMode: async (mode) => mutateEventControl({ action: "SET_MODE", eventId: state.eventId, mode }),
-    setEventStatus: async (status) => mutateEventControl({ action: "SET_STATUS", eventId: state.eventId, status }),
-    activateTeam: async (teamId) => mutateEventControl({ action: "ACTIVATE_TEAM", eventId: state.eventId, teamId }),
-    completeActiveTeam: async () => mutateEventControl({ action: "COMPLETE_TEAM", eventId: state.eventId }),
-    setDisplayMode: async (displayMode) => mutateEventControl({ action: "SET_DISPLAY", eventId: state.eventId, displayMode }),
+    setMode: async (mode) => state.snapshotReady && mutateEventControl({ action: "SET_MODE", eventId: state.eventId, mode }),
+    setEventStatus: async (status) => state.snapshotReady && mutateEventControl({ action: "SET_STATUS", eventId: state.eventId, status }),
+    activateTeam: async (teamId) => state.snapshotReady && mutateEventControl({ action: "ACTIVATE_TEAM", eventId: state.eventId, teamId }),
+    completeActiveTeam: async () => state.snapshotReady && mutateEventControl({ action: "COMPLETE_TEAM", eventId: state.eventId }),
+    setDisplayMode: async (displayMode) => state.snapshotReady && mutateEventControl({ action: "SET_DISPLAY", eventId: state.eventId, displayMode }),
     setNetwork: (network) => dispatch({ type: "SET_NETWORK", network }),
     setQaScenario: (scenario) => dispatch({ type: "SET_QA_SCENARIO", scenario }),
     resetRehearsal: async () => {
       const accepted = await mutateEventControl({ action: "RESET_REHEARSAL", eventId: state.eventId });
-      if (accepted) {
-        dispatch({ type: "RESET_REHEARSAL" });
-        await refreshOperations();
-      }
+      if (accepted) await refreshOperations();
       return accepted;
     },
   }), [mutateEventControl, refreshOperations, state]);

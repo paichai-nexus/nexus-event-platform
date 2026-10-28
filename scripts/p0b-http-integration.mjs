@@ -108,12 +108,13 @@ const concurrent = await Promise.all([
   request("/api/votes", voteOptions(audienceCookies[0])),
 ]);
 const concurrentBodies = await Promise.all(concurrent.map((response) => response.clone().json().catch(() => null)));
-assert.deepEqual(concurrent.map((response) => response.status).sort(), [200, 409], `Concurrent duplicate vote must store exactly one row: ${JSON.stringify(concurrentBodies)}`);
+assert.deepEqual(concurrent.map((response) => response.status).sort(), [200, 200], `Concurrent duplicate vote must reconcile to the single stored row: ${JSON.stringify(concurrentBodies)}`);
+assert.equal(new Set(concurrentBodies.map((body) => body.data.submissionId)).size, 1, "Concurrent responses must identify the same stored submission.");
 for (const cookie of audienceCookies.slice(1)) {
   await json("/api/votes", voteOptions(cookie));
 }
-const duplicate = await json("/api/votes", voteOptions(audienceCookies[0]), 409);
-assert.equal(duplicate.body.error.code, "ALREADY_SUBMITTED");
+const duplicate = await json("/api/votes", voteOptions(audienceCookies[0]));
+assert.equal(duplicate.body.data.submissionId, concurrentBodies[0].data.submissionId);
 
 const afterVotes = await json(`/api/event/snapshot?eventId=${eventId}`, { headers: actorHeaders(adminId) });
 assert.equal(afterVotes.body.data.voteCount, 12);

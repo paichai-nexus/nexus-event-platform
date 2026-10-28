@@ -181,7 +181,11 @@ export class PostgresTestVoteRepository implements VoteRepository {
       const message = messageOf(error);
       if (message.includes("VOTING_CLOSED")) throw new DomainError("EVENT_CLOSED", "현재 투표가 열려 있지 않습니다.", 409);
       if (message.includes("NOT_ELIGIBLE")) throw new DomainError("FORBIDDEN", "현장 입장을 완료한 참가자만 투표할 수 있습니다.", 403);
-      if (message.includes("ALREADY_SUBMITTED")) throw new DomainError("ALREADY_SUBMITTED", "이미 해당 발표팀 평가를 제출했습니다.", 409);
+      if (message.includes("ALREADY_SUBMITTED")) {
+        const state = await this.getState(eventId, sessionToken);
+        if (state.submissionId) return state;
+        throw new DomainError("ALREADY_SUBMITTED", "이미 해당 발표팀 평가를 제출했습니다.", 409);
+      }
       throw error;
     }
     return this.getState(eventId, sessionToken);

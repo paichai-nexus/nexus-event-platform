@@ -12,7 +12,9 @@
     "test:migrations": "node scripts/validate-migrations.mjs",
     "test:secrets": "node scripts/scan-secrets.mjs",
     "test:db": "bash scripts/run-p0a-db-validation.sh",
-    "test:p0b": "bash scripts/run-p0b-http-integration.sh"
+    "test:p0b": "bash scripts/run-p0b-http-integration.sh",
+    "test:p0c": "vitest run tests/p0c-scoring.test.ts tests/p0c-scoring-diagnostics.test.ts tests/p0c-postgres-diagnostics-wiring.test.ts",
+    "test:p0c:postgres": "bash scripts/run-p0c-scoring-http-integration.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

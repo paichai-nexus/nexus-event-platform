@@ -16,7 +16,14 @@ describe("P0-C scoring diagnostic contract", () => {
     expect(report.teams[0].audienceVoteCount).toBe(17);
   });
   it("does not declare official results ready", () => {
-    expect(summarizeScoringDiagnostics(input()).officialScoresAvailable).toBe(false);
+    const report = summarizeScoringDiagnostics(input());
+    expect(report.status).toBe("POLICY_APPROVAL_REQUIRED");
+    expect(report.officialScoresAvailable).toBe(false);
+    expect(report.reasons).toEqual(expect.arrayContaining([
+      "70:30 vs 80:20 policy conflict",
+      "Audience vote-to-score conversion not approved",
+      "Tie resolution not approved",
+    ]));
   });
   it("blocks preview if any assignment lacks a submitted score", () => {
     const data = input(); data.submissions[1].status = "DRAFT";

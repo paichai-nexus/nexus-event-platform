@@ -52,6 +52,28 @@ export async function runPostgresTestJson<T>(
   variables: Record<string, string | number | null> = {},
   access: DatabaseAccess = { role: "superuser" },
 ): Promise<T> {
+  return executePostgresTestJson(statement, variables, access, false);
+}
+
+/**
+ * Read-only P0-B/P0-C HTTP integration query. The caller supplies the already
+ * authorized actor so PostgreSQL evaluates the query as `authenticated` with
+ * the same auth.uid() used by Supabase RLS.
+ */
+export async function runPostgresTestReadJson<T>(
+  statement: string,
+  variables: Record<string, string | number | null>,
+  userId: string,
+): Promise<T> {
+  return executePostgresTestJson(statement, variables, { role: "authenticated", userId }, true);
+}
+
+async function executePostgresTestJson<T>(
+  statement: string,
+  variables: Record<string, string | number | null>,
+  access: DatabaseAccess,
+  readOnly: boolean,
+): Promise<T> {
   const config = configuration();
   const args = [config.databaseUrl, "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1"];
   const allVariables = access.role === "authenticated" ? { ...variables, p0b_actor_id: access.userId } : variables;
@@ -59,7 +81,7 @@ export async function runPostgresTestJson<T>(
     if (!/^[a-z][a-z0-9_]*$/i.test(name)) throw new Error(`Unsafe psql variable name: ${name}`);
     args.push("-v", `${name}=${value ?? ""}`);
   }
-  const sql = `begin; ${accessPrelude(access)} ${statement} commit;`;
+  const sql = `begin; ${readOnly ? "set transaction read only;" : ""} ${accessPrelude(access)} ${statement} commit;`;
 
   try {
     const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {

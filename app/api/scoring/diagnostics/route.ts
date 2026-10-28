@@ -3,16 +3,26 @@ import { requireRuntimeMode } from "@/lib/config/runtime";
 import { toErrorResponse } from "@/lib/errors/domainError";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { summarizeScoringDiagnostics } from "@/features/scoring/lib/scoringDiagnostics";
+import { readPostgresScoringDiagnostics } from "@/lib/scoring/postgresScoringDiagnostics";
 
 export const dynamic = "force-dynamic";
 
 /** Admin-only informational endpoint; never publishes or finalizes results. */
 export async function GET(request: Request) {
   try {
-    await authorizeRoles(["ADMIN", "STAFF"]);
+    const actor = await authorizeRoles(["ADMIN", "STAFF"]);
     const eventId = new URL(request.url).searchParams.get("eventId");
     if (!eventId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)) {
       return Response.json({ ok: false, error: "VALID_EVENT_ID_REQUIRED" }, { status: 400 });
+    }
+    const runtimeMode = requireRuntimeMode();
+    if (runtimeMode === "postgres-test") {
+      const input = await readPostgresScoringDiagnostics(eventId, actor.userId);
+      const report = summarizeScoringDiagnostics(input);
+      return Response.json(
+        { ok: true, runtimeMode, eventId, ...report },
+        { headers: { "Cache-Control": "no-store, max-age=0" } },
+      );
     }
     const db = await createSupabaseServerClient();
     if (!db) return Response.json({ ok: false, error: "DATABASE_UNAVAILABLE" }, { status: 503 });
@@ -36,7 +46,7 @@ export async function GET(request: Request) {
       teams: teams.data ?? [], criteria: criteria.data ?? [], assignments: assignments.data ?? [],
       submissions: submissions.data ?? [], scores: scores.data ?? [], votes: votes.data ?? [],
     });
-    return Response.json({ ok: true, runtimeMode: requireRuntimeMode(), eventId, ...report }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+    return Response.json({ ok: true, runtimeMode, eventId, ...report }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   } catch (error) {
     return toErrorResponse(error);
   }

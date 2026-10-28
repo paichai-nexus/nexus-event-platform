@@ -66,7 +66,8 @@ env \
   P0B_PSQL_PATH="$(command -v psql)" \
   ATTENDANCE_EXIT_SECRET="$attendance_secret" \
   APP_BASE_URL="$base_url" \
-  "$node_path" node_modules/next/dist/bin/next dev -H 127.0.0.1 -p "$port" >"$server_log" 2>&1 &
+  WATCHPACK_POLLING=true \
+  "$node_path" node_modules/next/dist/bin/next dev --webpack -H 127.0.0.1 -p "$port" >"$server_log" 2>&1 &
 server_pid=$!
 
 ready=false

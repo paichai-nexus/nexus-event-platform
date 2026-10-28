@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { PublicEventSnapshot } from "@/features/event/services/eventSnapshotService";
+import { submitVoteResilient } from "@/features/voting/lib/submitVoteResilient";
+import { backoffDelay, requestJson } from "@/lib/network/resilientFetch";
 import type { AudienceVoteState } from "@/types/voting";
 
 type VoteStorage = "DATABASE" | "MOCK";
+type SnapshotPayload = { data: PublicEventSnapshot };
+type VotePayload = { data: AudienceVoteState; storage: VoteStorage };
 
 export default function VotePage() {
   const [snapshot, setSnapshot] = useState<PublicEventSnapshot | null>(null);
@@ -14,52 +18,80 @@ export default function VotePage() {
   const [storage, setStorage] = useState<VoteStorage | null>(null);
   const [pending, setPending] = useState(true);
   const [feedback, setFeedback] = useState("");
+  const submittingRef = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
-      const [snapshotResponse, voteResponse] = await Promise.all([
-        fetch("/api/event/public-snapshot", { cache: "no-store" }),
-        fetch("/api/votes", { cache: "no-store" }),
+      const [snapshotPayload, votePayload] = await Promise.all([
+        requestJson<SnapshotPayload>("/api/event/public-snapshot", { cache: "no-store" }),
+        requestJson<VotePayload>("/api/votes", { cache: "no-store" }),
       ]);
-      const snapshotPayload = await snapshotResponse.json();
-      if (snapshotResponse.ok) setSnapshot(snapshotPayload.data as PublicEventSnapshot);
-      const votePayload = await voteResponse.json();
-      if (!voteResponse.ok) throw new Error(votePayload.error?.message ?? "투표 상태를 확인하지 못했습니다.");
-      setVoteState(votePayload.data as AudienceVoteState);
-      setStorage(votePayload.storage as VoteStorage);
-      setFeedback("");
+      setSnapshot(snapshotPayload.data);
+      setVoteState(votePayload.data);
+      setStorage(votePayload.storage);
+      return true;
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "투표 상태를 확인하지 못했습니다.");
+      return false;
     } finally {
       setPending(false);
     }
   }, []);
 
   useEffect(() => {
-    const initial = window.setTimeout(() => void refresh(), 0);
-    const timer = window.setInterval(() => void refresh(), 3_000);
+    let stopped = false;
+    let timer: number | undefined;
+    let failures = 0;
+
+    const schedule = (delay: number) => {
+      window.clearTimeout(timer);
+      if (!stopped) timer = window.setTimeout(() => void run(), delay);
+    };
+    const run = async () => {
+      if (document.hidden || !navigator.onLine) return;
+      const succeeded = await refresh();
+      failures = succeeded ? 0 : Math.min(failures + 1, 6);
+      schedule(succeeded ? 5_000 + Math.round(Math.random() * 1_000) : backoffDelay(failures, 1_000, 30_000));
+    };
+    const resume = () => {
+      if (!document.hidden && navigator.onLine) schedule(Math.round(Math.random() * 300));
+    };
+    const pause = () => window.clearTimeout(timer);
+    const onVisibilityChange = () => document.hidden ? pause() : resume();
+
+    window.addEventListener("online", resume);
+    window.addEventListener("offline", pause);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    schedule(0);
     return () => {
-      window.clearTimeout(initial);
-      window.clearInterval(timer);
+      stopped = true;
+      window.clearTimeout(timer);
+      window.removeEventListener("online", resume);
+      window.removeEventListener("offline", pause);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [refresh]);
 
   const submitVote = async () => {
+    if (submittingRef.current || !snapshot?.activeTeam?.id) return;
+    submittingRef.current = true;
     setPending(true);
     try {
-      const response = await fetch("/api/votes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+      const result = await submitVoteResilient(snapshot.activeTeam.id, {
+        submit: () => requestJson<VotePayload>("/api/votes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }),
+        readState: () => requestJson<VotePayload>("/api/votes", { cache: "no-store" }),
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error?.message ?? "투표를 저장하지 못했습니다.");
-      setVoteState(payload.data as AudienceVoteState);
-      setStorage(payload.storage as VoteStorage);
-      setFeedback("평가가 서버에 저장되었습니다.");
+      setVoteState(result.data);
+      setStorage(result.storage);
+      setFeedback(result.recovered ? "서버 상태를 다시 확인해 제출 완료를 복구했습니다." : "평가가 서버에 저장되었습니다.");
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "투표를 저장하지 못했습니다.");
     } finally {
+      submittingRef.current = false;
       setPending(false);
     }
   };

@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { PublicEventSnapshot } from "@/features/event/services/eventSnapshotService";
+import { saveJudgeDraftResilient, submitJudgeResilient } from "@/features/judging/lib/submissionResilience";
+import { requestJson } from "@/lib/network/resilientFetch";
 import type { JudgeWorkspace, JudgeWorkspaceScore } from "@/types/judging";
+
+type WorkspacePayload = { data: JudgeWorkspace; storage: "DATABASE" | "MOCK" };
+type SnapshotPayload = { data: PublicEventSnapshot };
+type JudgeMutationPayload = { data: JudgeWorkspace };
 
 export default function JudgePage() {
   const [workspace, setWorkspace] = useState<JudgeWorkspace | null>(null);
@@ -15,30 +21,32 @@ export default function JudgePage() {
   const [message, setMessage] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [pending, setPending] = useState(true);
+  const mutationRef = useRef(false);
+
+  const readWorkspace = useCallback(async () => {
+    const payload = await requestJson<WorkspacePayload>("/api/judging?view=workspace", { cache: "no-store" });
+    setStorage(payload.storage);
+    return payload.data;
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
-      const [workspaceResponse, snapshotResponse] = await Promise.all([
-        fetch("/api/judging?view=workspace", { cache: "no-store" }),
-        fetch("/api/event/public-snapshot", { cache: "no-store" }),
+      const [nextWorkspace, snapshotPayload] = await Promise.all([
+        readWorkspace(),
+        requestJson<SnapshotPayload>("/api/event/public-snapshot", { cache: "no-store" }),
       ]);
-      const workspacePayload = await workspaceResponse.json();
-      if (!workspaceResponse.ok) throw new Error(workspacePayload.error?.message ?? "심사 작업공간을 불러오지 못했습니다.");
-      const nextWorkspace = workspacePayload.data as JudgeWorkspace;
       setWorkspace(nextWorkspace);
       setScores(nextWorkspace.criteria.map((criterion) => ({
         criterionId: criterion.id,
         score: nextWorkspace.scores.find((score) => score.criterionId === criterion.id)?.score ?? 0,
       })));
-      setStorage(workspacePayload.storage);
-      const snapshotPayload = await snapshotResponse.json();
-      if (snapshotResponse.ok) setSnapshot(snapshotPayload.data as PublicEventSnapshot);
+      setSnapshot(snapshotPayload.data);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "심사 작업공간을 불러오지 못했습니다.");
     } finally {
       setPending(false);
     }
-  }, []);
+  }, [readWorkspace]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void refresh(), 0);
@@ -50,49 +58,60 @@ export default function JudgePage() {
   const teamAssigned = Boolean(workspace?.activeTeamId && workspace.assignedTeamIds.includes(workspace.activeTeamId));
   const readOnly = workspace?.status === "SUBMITTED";
 
-  const save = async () => {
-    if (!workspace?.activeTeamId) throw new Error("현재 심사 대상이 없습니다.");
-    const response = await fetch("/api/judging", {
+  const save = async (eventId: string, teamId: string) => {
+    const payload = await requestJson<JudgeMutationPayload>("/api/judging", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId: workspace.eventId, teamId: workspace.activeTeamId, scores }),
+      body: JSON.stringify({ eventId, teamId, scores }),
     });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error?.message ?? "심사 점수를 저장하지 못했습니다.");
-    setWorkspace(payload.data as JudgeWorkspace);
-    return payload.data as JudgeWorkspace;
+    return payload.data;
   };
 
   const saveDraft = async () => {
+    if (mutationRef.current || !workspace?.activeTeamId) return;
+    mutationRef.current = true;
     setPending(true);
     try {
-      await save();
-      setMessage("심사 점수가 서버에 임시 저장되었습니다.");
+      const result = await saveJudgeDraftResilient(workspace.activeTeamId, scores, {
+        readWorkspace,
+        saveDraft: () => save(workspace.eventId, workspace.activeTeamId as string),
+      });
+      setWorkspace(result.workspace);
+      setMessage(result.recovered ? "서버 상태를 다시 확인해 임시 저장 완료를 복구했습니다." : "심사 점수가 서버에 임시 저장되었습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "심사 점수를 저장하지 못했습니다.");
     } finally {
+      mutationRef.current = false;
       setPending(false);
     }
   };
 
   const finalSubmit = async () => {
+    if (mutationRef.current || !workspace?.activeTeamId) return;
+    mutationRef.current = true;
     setPending(true);
     try {
-      const saved = await save();
-      if (!saved.activeTeamId) throw new Error("현재 심사 대상이 없습니다.");
-      const response = await fetch("/api/judging", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: saved.eventId, teamId: saved.activeTeamId }),
+      const teamId = workspace.activeTeamId;
+      const eventId = workspace.eventId;
+      const result = await submitJudgeResilient(teamId, scores, {
+        readWorkspace,
+        saveDraft: () => save(eventId, teamId),
+        submit: async () => {
+          const payload = await requestJson<JudgeMutationPayload>("/api/judging", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ eventId, teamId }),
+          });
+          return payload.data;
+        },
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error?.message ?? "심사 점수를 제출하지 못했습니다.");
-      setWorkspace(payload.data as JudgeWorkspace);
-      setMessage("심사가 최종 제출되어 잠겼습니다.");
+      setWorkspace(result.workspace);
+      setMessage(result.recovered ? "서버 상태를 다시 확인해 최종 제출 완료를 복구했습니다." : "심사가 최종 제출되어 잠겼습니다.");
       setConfirm(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "심사 점수를 제출하지 못했습니다.");
     } finally {
+      mutationRef.current = false;
       setPending(false);
     }
   };

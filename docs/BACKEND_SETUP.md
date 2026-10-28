@@ -1,29 +1,27 @@
 # Backend setup
 
-The application runs in an explicit server-memory fallback when Supabase environment variables are absent. This fallback is for UI development and rehearsal only; it is not durable across a Node.js process restart.
+The application is fail-closed until `APP_RUNTIME_MODE` is explicitly configured. Missing Supabase settings never cause `staging` or `production` to fall back to Mock data. Local UI development may use `APP_RUNTIME_MODE=mock` only together with `ALLOW_MOCK_RUNTIME=true`; this mode is rejected in production runtimes and is not durable across a Node.js process restart.
 
 ## Environment
 
 Copy `.env.example` to `.env.local` and set:
 
+- `APP_RUNTIME_MODE` (`mock`, `postgres-test`, `staging`, or `production`)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only; never expose it through a `NEXT_PUBLIC_` variable)
 - `APP_BASE_URL`
+- `ATTENDANCE_EXIT_SECRET`
 
 Never commit `.env.local`.
 
 ## Migration order
 
-Apply the SQL files in `supabase/migrations` in filename order:
+Apply migrations `001` through `014` in filename order. They include the core schema, indexes, RLS, atomic operations, rehearsal fixtures, attendance, team slots, prize and mission tables, production controls, persistent voting/judging, fail-closed public access, and explicit server-only read grants.
 
-1. Core enum and table schema
-2. Operational indexes and the one-presenting-team constraint
-3. RLS policies and the role helper
-4. Atomic operational functions and validation triggers
-5. Rehearsal-only seed data
+Automatic local seeding is disabled in `supabase/config.toml`. Staging identities and test events must be separately approved and must not be inserted implicitly by `supabase db reset`.
 
-The seed deliberately does not create real people, auth users, or evaluation criteria. Criteria, score allocation, participant authentication, tie-breaking, and post-submit reopening remain `RULE_NOT_CONFIRMED`.
+The rehearsal fixture in migration 005 deliberately does not create real people, auth users, or evaluation criteria. Criteria, score allocation, participant authentication, tie-breaking, and post-submit reopening remain `RULE_NOT_CONFIRMED`.
 
 ## First operator
 
@@ -56,3 +54,5 @@ Database uniqueness on `(event_id, participant_id)` and `INSERT ... ON CONFLICT`
 ## Not yet production-verified
 
 No Supabase project or credentials were supplied, so migrations, Auth cookies, RLS policies, RPC execution, and Realtime have not been exercised against a remote database. Apply migrations to a non-production Supabase project and run the event-day test plan before enabling `LIVE` mode.
+
+For the fail-closed hosted validation workflow and required Production/Staging target separation, see `docs/P0C_PHASE7_STAGING_VALIDATION.md`.

@@ -21,13 +21,17 @@ export default function JudgePage() {
   const [message, setMessage] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [pending, setPending] = useState(true);
+  const [rehearsalJudge, setRehearsalJudge] = useState("1");
   const mutationRef = useRef(false);
 
   const readWorkspace = useCallback(async () => {
-    const payload = await requestJson<WorkspacePayload>("/api/judging?view=workspace", { cache: "no-store" });
+    const payload = await requestJson<WorkspacePayload>("/api/judging?view=workspace", {
+      cache: "no-store",
+      headers: { "x-rehearsal-judge": rehearsalJudge },
+    });
     setStorage(payload.storage);
     return payload.data;
-  }, []);
+  }, [rehearsalJudge]);
 
   const refresh = useCallback(async () => {
     try {
@@ -61,8 +65,8 @@ export default function JudgePage() {
   const save = async (eventId: string, teamId: string) => {
     const payload = await requestJson<JudgeMutationPayload>("/api/judging", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ eventId, teamId, scores }),
+      headers: { "Content-Type": "application/json", "x-rehearsal-judge": rehearsalJudge },
     });
     return payload.data;
   };
@@ -99,7 +103,7 @@ export default function JudgePage() {
         submit: async () => {
           const payload = await requestJson<JudgeMutationPayload>("/api/judging", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-rehearsal-judge": rehearsalJudge },
             body: JSON.stringify({ eventId, teamId }),
           });
           return payload.data;
@@ -129,10 +133,23 @@ export default function JudgePage() {
         <p>{teamAssigned ? "배정된 현재 발표팀의 평가항목을 저장합니다." : "현재 발표팀에 대한 심사 배정을 확인해주세요."}</p>
       </section>
       <section className="participant-content">
+        {storage === "MOCK" && <label className="rehearsal-judge-selector">
+          <span>리허설 심사위원</span>
+          <select value={rehearsalJudge} disabled={pending} onChange={(event) => {
+            setMessage("");
+            setPending(true);
+            setRehearsalJudge(event.target.value);
+          }}>
+            <option value="1">Judge 01</option>
+            <option value="2">Judge 02</option>
+            <option value="3">Judge 03</option>
+          </select>
+          <small>시연 모드 전용 · 심사위원별 제출 상태가 별도로 집계됩니다.</small>
+        </label>}
         {workspace?.criteria.length ? (
           <div className="judge-form">{workspace.criteria.map((criterion) => {
             const score = scores.find((item) => item.criterionId === criterion.id)?.score ?? 0;
-            return <label key={criterion.id}><span><small>CRITERION {criterion.order + 1}</small><strong>{criterion.name}</strong></span><input type="number" min={0} max={criterion.maxScore} value={score} disabled={readOnly || pending} onChange={(event) => setScores((current) => current.map((item) => item.criterionId === criterion.id ? { ...item, score: Math.max(0, Math.min(criterion.maxScore, Number(event.target.value))) } : item))} /><b>/ {criterion.maxScore}</b></label>;
+            return <label key={criterion.id}><span><small>CRITERION {criterion.order}</small><strong>{criterion.name}</strong></span><input type="number" min={0} max={criterion.maxScore} value={score} disabled={readOnly || pending} onChange={(event) => setScores((current) => current.map((item) => item.criterionId === criterion.id ? { ...item, score: Math.max(0, Math.min(criterion.maxScore, Number(event.target.value))) } : item))} /><b>/ {criterion.maxScore}</b></label>;
           })}</div>
         ) : <p className="participant-feedback">확정된 심사 기준이 없습니다. 관리자 기준 설정이 필요합니다.</p>}
         <div className="judge-total"><span>TOTAL</span><strong>{total} <small>/ {maximum}</small></strong></div>

@@ -16,7 +16,7 @@ export const eventControlInputSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("RESET_REHEARSAL"), eventId: z.string().uuid() }),
   z.object({ action: z.literal("ACTIVATE_TEAM"), eventId: z.string().uuid(), teamId: z.string().min(1) }),
   z.object({ action: z.literal("COMPLETE_TEAM"), eventId: z.string().uuid() }),
-  z.object({ action: z.literal("SET_DISPLAY"), eventId: z.string().uuid(), displayMode: z.enum(["SPOTLIGHT", "VOTE_PROGRESS", "HOLDING", "AWARD_REVEAL"]) }),
+  z.object({ action: z.literal("SET_DISPLAY"), eventId: z.string().uuid(), displayMode: z.enum(["SPOTLIGHT", "VOTE_PROGRESS", "HOLDING", "RESULT_SHOW", "AWARD_REVEAL"]) }),
   z.object({ action: z.literal("SET_REVEAL_STEP"), eventId: z.string().uuid(), revealStep: z.number().int().min(0).max(20) }),
 ]);
 

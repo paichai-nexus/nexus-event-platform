@@ -37,7 +37,7 @@ export async function GET(request: Request) {
         revealStep: Number(row.reveal_step),
       } as EventControlSnapshot;
       const teamResult = await supabase.from("teams")
-        .select("id, name, presentation_order, category, status, active")
+        .select("id, name, department, advisor_name, leader_name, member_names, presentation_topic, promotion_enabled, presentation_order, category, status, active")
         .eq("event_id", event.eventId)
         .eq("active", true)
         .order("presentation_order");
@@ -45,10 +45,12 @@ export async function GET(request: Request) {
       teams = (teamResult.data ?? []).map((team) => ({
         id: team.id,
         name: team.name,
-        leaderName: null,
-        memberNames: [],
-        topic: null,
-        promotionEnabled: false,
+        department: team.department,
+        advisorName: team.advisor_name,
+        leaderName: team.leader_name,
+        memberNames: team.member_names ?? [],
+        topic: team.presentation_topic,
+        promotionEnabled: team.promotion_enabled,
         order: team.presentation_order,
         category: team.category,
         status: team.status === "WAITING" ? "READY" : team.status,

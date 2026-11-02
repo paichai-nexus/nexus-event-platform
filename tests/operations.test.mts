@@ -124,7 +124,7 @@ test("CSV output neutralizes spreadsheet formulas", () => {
   assert.match(csv, /"'@cmd"/);
 });
 
-test("public snapshot exposes only allow-listed presentation data", () => {
+test("public snapshot exposes only the active team's approved presentation profile", () => {
   const snapshot = toPublicEventSnapshot(
     {
       eventId: "event-secret",
@@ -137,14 +137,15 @@ test("public snapshot exposes only allow-listed presentation data", () => {
       resultStatus: "LOCKED",
       revealStep: 0,
     },
-    [{ id: "team-1", name: "공개 팀", leaderName: "비공개 이름", memberNames: ["비공개 팀원"], topic: "공개 주제", promotionEnabled: true, order: 1, category: "STARTUP", status: "PRESENTING", active: true }],
+    [{ id: "team-1", name: "공개 팀", department: "경영학과", advisorName: "김교수", leaderName: "팀대표", memberNames: ["팀원"], topic: "공개 주제", promotionEnabled: true, order: 1, category: "STARTUP", status: "PRESENTING", active: true }],
     "2026-11-04T04:00:00.000Z",
   );
   const serialized = JSON.stringify(snapshot);
   assert.equal(snapshot.version, 7);
   assert.equal(snapshot.activeTeam?.name, "공개 팀");
-  assert.equal(serialized.includes("비공개 이름"), false);
-  assert.equal(serialized.includes("비공개 팀원"), false);
+  assert.equal(snapshot.activeTeam?.department, "경영학과");
+  assert.equal(snapshot.activeTeam?.advisorName, "김교수");
+  assert.deepEqual(snapshot.activeTeam?.memberNames, ["팀원"]);
   assert.equal(serialized.includes("event-secret"), false);
   assert.equal(serialized.includes("score"), false);
 });

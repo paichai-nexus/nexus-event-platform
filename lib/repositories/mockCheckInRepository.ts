@@ -41,6 +41,13 @@ export function resetMockCheckIns() {
   globalForCheckIns.__eventCheckIns = { baseCount: 0, records: new Map(), audienceRecords: new Map() };
 }
 
+export function getMockActiveAudienceCount() {
+  const store = getStore();
+  return store.baseCount
+    + store.records.size
+    + [...store.audienceRecords.values()].filter((record) => record.exitedAt === null).length;
+}
+
 function audienceParticipantId(sessionToken: string) {
   return `AUD-${sessionToken.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
 }

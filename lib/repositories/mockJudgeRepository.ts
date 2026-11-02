@@ -16,6 +16,16 @@ function workspaces() {
   return globalForJudging.__mockJudgeWorkspaces;
 }
 
+export const MOCK_JUDGE_IDS = [
+  "00000000-0000-4000-8000-000000000001",
+  "00000000-0000-4000-8000-000000000002",
+  "00000000-0000-4000-8000-000000000003",
+] as const;
+
+export function resetMockJudgeWorkspaces() {
+  globalForJudging.__mockJudgeWorkspaces = new Map();
+}
+
 export class MockJudgeRepository implements JudgeRepository {
   async getWorkspace(eventId: string, activeTeamId: string | null, judgeUserId: string) {
     const key = `${eventId}:${judgeUserId}:${activeTeamId ?? "none"}`;
@@ -24,8 +34,7 @@ export class MockJudgeRepository implements JudgeRepository {
     return { eventId, activeTeamId, assignedTeamIds: activeTeamId ? [activeTeamId] : [], criteria: MOCK_CRITERIA, submissionId: null, status: "NOT_STARTED" as const, scores: [], submittedAt: null };
   }
 
-  private async update(eventId: string, teamId: string, scores: JudgeWorkspaceScore[] | null, status: "DRAFT" | "SUBMITTED") {
-    const judgeUserId = "00000000-0000-4000-8000-000000000001";
+  private async update(eventId: string, teamId: string, scores: JudgeWorkspaceScore[] | null, status: "DRAFT" | "SUBMITTED", judgeUserId: string) {
     const key = `${eventId}:${judgeUserId}:${teamId}`;
     const current = await this.getWorkspace(eventId, teamId, judgeUserId);
     if (current.status === "SUBMITTED" && status === "DRAFT") {
@@ -42,16 +51,20 @@ export class MockJudgeRepository implements JudgeRepository {
     return structuredClone(next);
   }
 
-  saveDraft(eventId: string, teamId: string, scores: JudgeWorkspaceScore[]) {
-    return this.update(eventId, teamId, scores, "DRAFT");
+  saveDraft(eventId: string, teamId: string, scores: JudgeWorkspaceScore[], judgeUserId: string) {
+    return this.update(eventId, teamId, scores, "DRAFT", judgeUserId);
   }
 
-  submit(eventId: string, teamId: string) {
-    return this.update(eventId, teamId, null, "SUBMITTED");
+  submit(eventId: string, teamId: string, judgeUserId: string) {
+    return this.update(eventId, teamId, null, "SUBMITTED", judgeUserId);
   }
 
   async getProgress() {
-    return [{ id: "Judge 01", completed: [...workspaces().values()].filter((item) => item.status === "SUBMITTED").length, total: 1 }];
+    return MOCK_JUDGE_IDS.map((judgeUserId, index) => ({
+      id: `Judge ${String(index + 1).padStart(2, "0")}`,
+      completed: [...workspaces().entries()].filter(([key, item]) => key.includes(`:${judgeUserId}:`) && item.status === "SUBMITTED").length,
+      total: 1,
+    }));
   }
 
   async unlock() {

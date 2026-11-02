@@ -1,11 +1,17 @@
 import "server-only";
 
+import { resetMockAudienceJury } from "@/lib/audience-jury/mockAudienceJuryStore";
+import { resetMockAudienceReservations } from "@/lib/audience-jury/mockAudienceReservationStore";
+import { resetMockAudienceBallots } from "@/lib/audience-jury/mockAudienceBallotStore";
 import type { EventControlRepository, EventControlSnapshot } from "@/lib/repositories/eventControlRepository";
 import { resetMockCheckIns } from "@/lib/repositories/mockCheckInRepository";
 import { resetMockPrizes } from "@/lib/repositories/mockPrizeRepository";
 import { activateMockTeam, completeMockTeam, resetMockTeams } from "@/lib/repositories/mockTeamRepository";
 import { resetMockPrizeCatalog } from "@/lib/repositories/mockPrizeCatalogRepository";
 import { resetMockMissions } from "@/lib/repositories/mockMissionRepository";
+import { resetMockVotes } from "@/lib/repositories/mockVoteRepository";
+import { resetMockJudgeWorkspaces } from "@/lib/repositories/mockJudgeRepository";
+import { resetMockPrizeStages } from "@/lib/prize/prizeStageStore";
 import type { EventMode, EventStatus } from "@/types/event";
 import type { VotingStatus } from "@/types/voting";
 import { DomainError } from "@/lib/errors/domainError";
@@ -121,6 +127,12 @@ export class MockEventControlRepository implements EventControlRepository {
     resetMockTeams();
     resetMockPrizeCatalog();
     resetMockMissions();
+    resetMockAudienceJury();
+    resetMockAudienceReservations();
+    resetMockAudienceBallots();
+    resetMockVotes();
+    resetMockJudgeWorkspaces();
+    resetMockPrizeStages();
     return { ...globalForEvent.__eventControl };
   }
 }

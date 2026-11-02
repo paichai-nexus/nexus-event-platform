@@ -12,7 +12,7 @@ export type PublicEventSnapshot = {
     resultStatus: EventControlSnapshot["resultStatus"];
     revealStep: number;
   };
-  activeTeam: null | Pick<Team, "id" | "name" | "topic" | "order" | "category" | "status">;
+  activeTeam: null | Pick<Team, "id" | "name" | "department" | "advisorName" | "leaderName" | "memberNames" | "topic" | "order" | "category" | "status">;
 };
 
 /** Explicit allow-list projection. Never spread an admin snapshot into a public response. */
@@ -34,7 +34,7 @@ export function toPublicEventSnapshot(
       revealStep: event.revealStep,
     },
     activeTeam: active
-      ? { id: active.id, name: active.name, topic: active.topic, order: active.order, category: active.category, status: active.status }
+      ? { id: active.id, name: active.name, department: active.department, advisorName: active.advisorName, leaderName: active.leaderName, memberNames: active.memberNames, topic: active.topic, order: active.order, category: active.category, status: active.status }
       : null,
   };
 }

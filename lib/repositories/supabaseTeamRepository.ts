@@ -9,6 +9,12 @@ import { finalistProfileForName } from "@/features/event/data/finalistCandidates
 type TeamRow = {
   id: string;
   name: string | null;
+  department: string | null;
+  advisor_name: string | null;
+  leader_name: string | null;
+  member_names: string[];
+  presentation_topic: string | null;
+  promotion_enabled: boolean;
   presentation_order: number;
   category: Team["category"];
   status: "WAITING" | "PRESENTING" | "DONE";
@@ -20,10 +26,12 @@ function toTeam(row: TeamRow): Team {
   return {
     id: row.id,
     name: row.name,
-    leaderName: profile?.leaderName ?? null,
-    memberNames: profile?.memberNames ?? [],
-    topic: profile?.topic ?? null,
-    promotionEnabled: Boolean(profile),
+    department: row.department,
+    advisorName: row.advisor_name,
+    leaderName: row.leader_name ?? profile?.leaderName ?? null,
+    memberNames: row.member_names?.length ? row.member_names : profile?.memberNames ?? [],
+    topic: row.presentation_topic ?? profile?.topic ?? null,
+    promotionEnabled: row.promotion_enabled,
     order: row.presentation_order,
     category: row.category,
     status: row.status === "WAITING" ? "READY" : row.status,
@@ -42,7 +50,7 @@ export class SupabaseTeamRepository implements TeamRepository {
     const supabase = await this.client();
     const { data, error } = await supabase
       .from("teams")
-      .select("id, name, presentation_order, category, status, active")
+      .select("id, name, department, advisor_name, leader_name, member_names, presentation_topic, promotion_enabled, presentation_order, category, status, active")
       .eq("event_id", eventId)
       .order("presentation_order");
     if (error) throw new DomainError("DATABASE_ERROR", "참가팀을 조회하지 못했습니다.", 500);
@@ -55,6 +63,12 @@ export class SupabaseTeamRepository implements TeamRepository {
       .from("teams")
       .update({
         name: update.name?.trim() || null,
+        department: update.department?.trim() || null,
+        advisor_name: update.advisorName?.trim() || null,
+        leader_name: update.leaderName?.trim() || null,
+        member_names: update.memberNames.map((member) => member.trim()).filter(Boolean),
+        presentation_topic: update.topic?.trim() || null,
+        promotion_enabled: update.promotionEnabled,
         presentation_order: update.order,
         category: update.category,
         status: update.status === "READY" ? "WAITING" : update.status,
@@ -62,7 +76,7 @@ export class SupabaseTeamRepository implements TeamRepository {
       })
       .eq("id", update.id)
       .eq("event_id", update.eventId)
-      .select("id, name, presentation_order, category, status, active")
+      .select("id, name, department, advisor_name, leader_name, member_names, presentation_topic, promotion_enabled, presentation_order, category, status, active")
       .single();
     if (error || !data) throw new DomainError("DATABASE_ERROR", "참가팀을 저장하지 못했습니다.", 500);
     return toTeam(data as TeamRow);

@@ -41,7 +41,7 @@ export class SupabaseJudgeRepository implements JudgeRepository {
     };
   }
 
-  async saveDraft(eventId: string, teamId: string, scores: JudgeWorkspaceScore[]) {
+  async saveDraft(eventId: string, teamId: string, scores: JudgeWorkspaceScore[], judgeUserId: string) {
     const supabase = await this.client();
     const { error } = await supabase.rpc("save_judge_scores", {
       p_event_id: eventId,
@@ -49,18 +49,14 @@ export class SupabaseJudgeRepository implements JudgeRepository {
       p_scores: scores.map((score) => ({ criterionId: score.criterionId, score: score.score })),
     });
     if (error) throw new DomainError("DATABASE_ERROR", "심사 점수를 저장하지 못했습니다.", 500);
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new DomainError("UNAUTHORIZED", "로그인이 필요합니다.", 401);
-    return this.getWorkspace(eventId, teamId, userData.user.id);
+    return this.getWorkspace(eventId, teamId, judgeUserId);
   }
 
-  async submit(eventId: string, teamId: string) {
+  async submit(eventId: string, teamId: string, judgeUserId: string) {
     const supabase = await this.client();
     const { error } = await supabase.rpc("submit_judge_scores", { p_event_id: eventId, p_team_id: teamId });
     if (error) throw new DomainError("DATABASE_ERROR", "심사 점수를 제출하지 못했습니다.", 500);
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new DomainError("UNAUTHORIZED", "로그인이 필요합니다.", 401);
-    return this.getWorkspace(eventId, teamId, userData.user.id);
+    return this.getWorkspace(eventId, teamId, judgeUserId);
   }
 
   async getProgress(eventId: string): Promise<JudgeProgress[]> {

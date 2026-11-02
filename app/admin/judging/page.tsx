@@ -7,6 +7,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useEventOps } from "@/features/event/context/EventOpsProvider";
 import { teamDisplayName } from "@/features/event/data/teamSlots";
+import { PaperJudgeScoreEntry } from "@/components/PaperJudgeScoreEntry";
 
 export default function JudgingAdminPage() {
   const { state } = useEventOps();
@@ -35,6 +36,7 @@ export default function JudgingAdminPage() {
           <OperationAlert level="INFO">세부 평가항목과 배점은 공식 확정 전입니다.</OperationAlert>
         </aside>
       </section>
+      <PaperJudgeScoreEntry eventId={state.eventId} teams={state.teams} />
     </div>
   );
 }

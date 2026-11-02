@@ -3,14 +3,14 @@ import { resolve } from "node:path";
 
 const migrationDirectory = resolve("supabase/migrations");
 const files = (await readdir(migrationDirectory)).filter((file) => file.endsWith(".sql")).sort();
-const expected = Array.from({ length: 14 }, (_, index) => String(index + 1).padStart(3, "0"));
+const expected = Array.from({ length: 25 }, (_, index) => String(index + 1).padStart(3, "0"));
 const actual = files.map((file) => file.slice(0, 3));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-014. Received: ${actual.join(", ")}`);
+assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-025. Received: ${actual.join(", ")}`);
 
 const sqlByFile = new Map(await Promise.all(files.map(async (file) => [file, await readFile(resolve(migrationDirectory, file), "utf8")])));
 const allSql = [...sqlByFile.values()].join("\n");
@@ -19,6 +19,17 @@ assert(!/\b(drop\s+table|truncate\s+table)\b/i.test(allSql), "Destructive DROP T
 const migration011 = sqlByFile.get(files.find((file) => file.startsWith("011_")));
 const migration012 = sqlByFile.get(files.find((file) => file.startsWith("012_")));
 const migration013 = sqlByFile.get(files.find((file) => file.startsWith("013_")));
+const migration015 = sqlByFile.get(files.find((file) => file.startsWith("015_")));
+const migration016 = sqlByFile.get(files.find((file) => file.startsWith("016_")));
+const migration017 = sqlByFile.get(files.find((file) => file.startsWith("017_")));
+const migration018 = sqlByFile.get(files.find((file) => file.startsWith("018_")));
+const migration019 = sqlByFile.get(files.find((file) => file.startsWith("019_")));
+const migration020 = sqlByFile.get(files.find((file) => file.startsWith("020_")));
+const migration021 = sqlByFile.get(files.find((file) => file.startsWith("021_")));
+const migration022 = sqlByFile.get(files.find((file) => file.startsWith("022_")));
+const migration023 = sqlByFile.get(files.find((file) => file.startsWith("023_")));
+const migration024 = sqlByFile.get(files.find((file) => file.startsWith("024_")));
+const migration025 = sqlByFile.get(files.find((file) => file.startsWith("025_")));
 
 for (const pattern of [
   /events_active_team_same_event_fk/,
@@ -42,5 +53,108 @@ for (const pattern of [
   /exception when unique_violation/,
   /ALREADY_SUBMITTED/,
 ]) assert(pattern.test(migration013), `013 missing required fail-closed guard: ${pattern}`);
+
+for (const pattern of [
+  /audience_jury_reservations enable row level security/,
+  /audience_jury_staff_read/,
+  /unique \(event_id, student_number\)/,
+  /unique \(event_id, pcu_code\)/,
+  /pg_advisory_xact_lock/,
+  /DEPARTMENT_CAPACITY_REACHED/,
+  /revoke all on function public\.register_audience_jury\(uuid, text, text, text, text\) from anon, authenticated/,
+  /grant execute on function public\.register_audience_jury\(uuid, text, text, text, text\) to service_role/,
+]) assert(pattern.test(migration015), `015 missing required audience-jury guard: ${pattern}`);
+
+for (const pattern of [
+  /audience_rank_ballots enable row level security/,
+  /unique \(event_id, reservation_id, category\)/,
+  /audience_rank_distinct_teams/,
+  /AUDIENCE_JURY_AUTH_REQUIRED/,
+  /ALREADY_SUBMITTED/,
+  /revoke all on function public\.submit_audience_rank_ballot.*from public, anon, authenticated/,
+  /grant execute on function public\.submit_audience_rank_ballot.*to service_role/,
+]) assert(pattern.test(migration016), `016 missing required ranked-ballot guard: ${pattern}`);
+
+for (const pattern of [
+  /prize_inventory enable row level security/,
+  /prize_item_draws_one_active_win_per_participant/,
+  /pg_advisory_xact_lock/,
+  /order by gen_random_uuid\(\)/,
+  /PRIZE_DRAW_COMPLETED/,
+  /AUDIENCE_JURY/,
+  /ALL_PARTICIPANTS/,
+  /grant execute on function public\.draw_prize_item_winner\(uuid, uuid\) to authenticated/,
+]) assert(pattern.test(migration017), `017 missing required prize-pool guard: ${pattern}`);
+
+for (const pattern of [
+  /add column if not exists department text/i,
+  /add column if not exists advisor_name text/i,
+  /add column if not exists member_names text\[\]/i,
+  /do not seed unverified personal information/i,
+]) assert(pattern.test(migration018), `018 missing team-profile guard: ${pattern}`);
+
+for (const pattern of [
+  /create table public\.paper_judge_scores/i,
+  /total_score integer generated always/i,
+  /PAPER_SUBMISSION_LOCKED/i,
+  /selected_event\.result_status <> 'LOCKED'/i,
+  /paper_judge_score_revisions/i,
+  /coalesce\(public\.current_app_role\(\) in \('ADMIN', 'STAFF'\), false\) = false/i,
+]) assert(pattern.test(migration019), `019 missing paper-score safety guard: ${pattern}`);
+
+for (const pattern of [
+  /create table public\.result_show_decks/i,
+  /status text not null default 'DRAFT'/i,
+  /current_app_role\(\) is distinct from 'ADMIN'/i,
+  /SHOW_DECK_NOT_APPROVED/i,
+  /RESULT_SHOW_APPROVE/i,
+  /p_display_mode = 'AWARD_REVEAL' and v_event\.result_status = 'LOCKED'/i,
+]) assert(pattern.test(migration020), `020 missing approved-show safety guard: ${pattern}`);
+
+for (const pattern of [
+  /create table public\.prize_stage_snapshots/i,
+  /create table public\.prize_stage_eligible_participants/i,
+  /current_app_role\(\) is distinct from 'ADMIN'/i,
+  /pg_advisory_xact_lock/i,
+  /exited_at is null/i,
+  /PRIZE_STAGE_ELIGIBILITY_LOCK/i,
+  /draw_prize_item_winner_for_stage/i,
+  /eligible\.snapshot_id = selected_snapshot\.id/i,
+]) assert(pattern.test(migration021), `021 missing prize-stage snapshot guard: ${pattern}`);
+
+for (const pattern of [
+  /add column if not exists best_reviewer jsonb/i,
+  /result_show_best_reviewer_object/i,
+  /BEST_REVIEWER_NOT_APPROVED/i,
+  /current_app_role\(\) is distinct from 'ADMIN'/i,
+  /best_reviewer_included/i,
+]) assert(pattern.test(migration022), `022 missing best-reviewer show guard: ${pattern}`);
+
+for (const pattern of [
+  /create table public\.ceremony_control_states/i,
+  /CEREMONY_INVALID_TRANSITION/i,
+  /current_app_role\(\) is distinct from 'ADMIN'/i,
+  /pg_advisory_xact_lock/i,
+  /CEREMONY_PHASE_CHANGE/i,
+]) assert(pattern.test(migration023), `023 missing ceremony-control guard: ${pattern}`);
+
+for (const pattern of [
+  /create function public\.import_team_roster/i,
+  /jsonb_array_length\(p_rows\) <> 19/i,
+  /startup_count <> 10 or analysis_count <> 9/i,
+  /current_app_role\(\) is distinct from 'ADMIN'/i,
+  /TEAM_ROSTER_IMPORT/i,
+]) assert(pattern.test(migration024), `024 missing atomic team-roster guard: ${pattern}`);
+
+for (const pattern of [
+  /create table public\.scoring_policy_versions/i,
+  /scoring_policy_weight_total/i,
+  /scoring_policy_one_approved_per_event/i,
+  /prevent_scoring_policy_reopen/i,
+  /current_app_role\(\) is distinct from 'ADMIN'/i,
+  /SCORING_POLICY_INCOMPLETE/i,
+  /SCORING_POLICY_APPROVE/i,
+  /grant execute on function public\.approve_scoring_policy\(uuid, uuid\) to authenticated/i,
+]) assert(pattern.test(migration025), `025 missing scoring-policy governance guard: ${pattern}`);
 
 console.log(`Migration static validation passed (${files.length} files: ${files[0]} … ${files.at(-1)}).`);

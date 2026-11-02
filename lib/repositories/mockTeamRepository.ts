@@ -5,6 +5,7 @@ import { finalistProfileForName } from "@/features/event/data/finalistCandidates
 import { DomainError } from "@/lib/errors/domainError";
 import type { TeamRepository } from "@/lib/repositories/teamRepository";
 import type { Team, TeamUpdate } from "@/types/team";
+import type { TeamRosterImportRow } from "@/types/team-roster-import";
 
 const MOCK_EVENT_ID = "00000000-0000-4000-8000-000000000100";
 const globalForTeams = globalThis as typeof globalThis & { __eventTeams?: Team[] };
@@ -16,6 +17,22 @@ function teams() {
 
 export function resetMockTeams() {
   globalForTeams.__eventTeams = createEmptyTeamSlots();
+}
+
+export function getMockTeamSnapshot() {
+  return structuredClone(teams());
+}
+
+export function importMockTeamRoster(eventId: string, rows: TeamRosterImportRow[]) {
+  if (eventId !== MOCK_EVENT_ID) throw new DomainError("NOT_FOUND", "행사를 찾을 수 없습니다.", 404);
+  const current = teams();
+  const next = rows.map((row) => {
+    const slot = current.find((team) => team.order === row.order);
+    if (!slot) throw new DomainError("NOT_FOUND", `${row.order}번 참가팀 슬롯을 찾을 수 없습니다.`, 404);
+    return { ...slot, ...row, advisorName: row.advisorName, status: "READY" as const, promotionEnabled: true };
+  }).sort((left, right) => left.order - right.order);
+  globalForTeams.__eventTeams = next;
+  return structuredClone(next);
 }
 
 export function activateMockTeam(teamId: string) {
@@ -52,10 +69,12 @@ export class MockTeamRepository implements TeamRepository {
       ...teams()[index],
       ...update,
       name,
-      leaderName: profile?.leaderName ?? null,
-      memberNames: profile?.memberNames ?? [],
-      topic: profile?.topic ?? null,
-      promotionEnabled: Boolean(profile),
+      department: update.department?.trim() || null,
+      advisorName: update.advisorName?.trim() || null,
+      leaderName: update.leaderName?.trim() || profile?.leaderName || null,
+      memberNames: update.memberNames.map((member) => member.trim()).filter(Boolean),
+      topic: update.topic?.trim() || profile?.topic || null,
+      promotionEnabled: update.promotionEnabled,
     };
     return structuredClone(teams()[index]);
   }

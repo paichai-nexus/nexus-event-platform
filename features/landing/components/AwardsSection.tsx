@@ -1,4 +1,5 @@
 import { AWARDS } from "@/features/landing/data/eventData";
+import Link from "next/link";
 import { SectionHeading } from "./SectionHeading";
 
 export function AwardsSection() {
@@ -13,6 +14,10 @@ export function AwardsSection() {
               <div><strong>{award.title}</strong>{award.prize && <b>{award.prize}</b>}<small>{award.count}</small></div>
             </article>
           ))}
+        </div>
+        <div className="landing-guide-actions">
+          <Link href="/awards-prizes">시상금·경품 전체 안내</Link>
+          <Link href="/evaluation-guide">채점 시스템·평가 기준</Link>
         </div>
       </div>
     </section>

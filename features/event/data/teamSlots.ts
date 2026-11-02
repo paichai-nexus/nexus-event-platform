@@ -13,6 +13,8 @@ export function createEmptyTeamSlots(): Team[] {
     return {
       id: `TEAM-${String(order).padStart(2, "0")}`,
       name: candidate?.name ?? null,
+      department: null,
+      advisorName: null,
       leaderName: null,
       memberNames: [],
       topic: candidate?.topic ?? null,

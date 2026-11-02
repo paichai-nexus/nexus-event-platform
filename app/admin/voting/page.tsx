@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { ProgressCard } from "@/components/ui/ProgressCard";
@@ -10,10 +10,29 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useEventOps } from "@/features/event/context/EventOpsProvider";
 import type { VotingStatus } from "@/types/voting";
 import { teamDisplayName } from "@/features/event/data/teamSlots";
+import type { AudienceBallotAggregate } from "@/types/audience-ballot-aggregate";
+import { OperationAlert } from "@/components/ui/OperationAlert";
 
 export default function VotingAdminPage() {
   const { state, setVotingStatus } = useEventOps();
   const [pending, setPending] = useState<VotingStatus | null>(null);
+  const [rankAggregate, setRankAggregate] = useState<AudienceBallotAggregate | null>(null);
+  const [aggregateError, setAggregateError] = useState("");
+  const loadRankAggregate = useCallback(async () => {
+    if (document.hidden || !navigator.onLine) return;
+    const response = await fetch(`/api/audience-ballot/aggregate?eventId=${encodeURIComponent(state.eventId)}`, { cache: "no-store" });
+    const payload = await response.json();
+    if (response.ok && payload.ok) { setRankAggregate(payload.data as AudienceBallotAggregate); setAggregateError(""); }
+    else setAggregateError(payload.error?.message ?? "청중평가 원표 집계를 조회하지 못했습니다.");
+  }, [state.eventId]);
+  useEffect(() => {
+    const initial = window.setTimeout(() => void loadRankAggregate(), 0);
+    const interval = window.setInterval(() => void loadRankAggregate(), 3000);
+    const resume = () => void loadRankAggregate();
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", resume);
+    return () => { window.clearTimeout(initial); window.clearInterval(interval); window.removeEventListener("online", resume); document.removeEventListener("visibilitychange", resume); };
+  }, [loadRankAggregate]);
   const voteByTeam = new Map(state.voteByTeam.map((team) => [team.teamId, team]));
   const activeVote = state.activeTeamId ? voteByTeam.get(state.activeTeamId) : undefined;
   const participation = activeVote?.eligibilityCount
@@ -29,6 +48,21 @@ export default function VotingAdminPage() {
         <ProgressCard label="CURRENT TEAM PARTICIPATION" value={activeVote?.voteCount ?? 0} total={activeVote?.eligibilityCount ?? state.checkInCount} completeLabel="제출" remainingLabel="미제출" />
       </section>
       <section className="admin-card"><PanelHeader label="TEAM SUBMISSIONS" title="팀별 제출 현황" aside={<span className="mock-note">{state.runtimeMode === "mock" ? "EXPLICIT MOCK" : "DATABASE"}</span>} /><div className="team-submission-list">{state.teams.map((team) => { const count = voteByTeam.get(team.id); const value = count?.voteCount ?? 0; const eligible = count?.eligibilityCount ?? 0; const percent = eligible ? Math.round((value / eligible) * 100) : 0; return <div key={team.id}><span>{String(team.order).padStart(2, "0")}</span><strong>{teamDisplayName(team)}</strong><small>{value} / {eligible}</small><div className="progress-track"><i style={{ width: `${percent}%` }} /></div><b>{percent}%</b></div>; })}</div></section>
+      <OperationAlert level="INFO">아래 표는 청중이 선정한 1위 후보 2팀의 동등 선택 집계입니다. A/B 선택에는 우선순위가 없으며, 공식 청중점수 환산식 승인 전에는 점수·순위로 변환하지 않습니다.</OperationAlert>
+      <section className="audience-rank-aggregate">
+        {rankAggregate?.categories.map((category) => {
+          const maximum = Math.max(1, ...category.teams.map((team) => team.firstVotes + team.secondVotes));
+          return <article className="admin-card" key={category.category}>
+            <PanelHeader label={category.category === "STARTUP" ? "STARTUP" : "BUSINESS ANALYSIS"} title={category.category === "STARTUP" ? "창업 부문 선택 현황" : "기업분석 부문 선택 현황"} aside={<span className="mock-note">{category.submittedBallots}명 제출</span>} />
+            <div className="rank-vote-list">{category.teams.map((team) => <div key={team.teamId}>
+              <span>{String(team.order).padStart(2, "0")}</span><strong>{team.teamName}</strong>
+              <div className="rank-vote-bars"><i style={{ width: `${((team.firstVotes + team.secondVotes) / maximum) * 100}%` }} /></div>
+              <small>1위 후보 선택 <b>{team.firstVotes + team.secondVotes}</b>표</small>
+            </div>)}</div>
+          </article>;
+        })}
+      </section>
+      <p className="participant-feedback" role="status">{aggregateError || (rankAggregate ? `청중평가단 ${rankAggregate.acceptedJuryCount}명 · ${new Date(rankAggregate.updatedAt).toLocaleTimeString("ko-KR")} 동기화` : "원표 집계 연결 중…")}</p>
       <ConfirmModal open={pending !== null} title={pending === "OPEN" ? "청중평가를 시작할까요?" : "청중평가를 마감할까요?"} description={pending === "OPEN" ? "참가자 화면에서 평가 제출이 가능해집니다." : "마감 후에는 참가자가 더 이상 제출할 수 없습니다."} confirmLabel={pending === "OPEN" ? "투표 시작" : "투표 마감"} danger={pending === "CLOSED"} onCancel={() => setPending(null)} onConfirm={() => { if (pending) setVotingStatus(pending); setPending(null); }} />
     </div>
   );

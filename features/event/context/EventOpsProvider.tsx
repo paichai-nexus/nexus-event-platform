@@ -262,15 +262,20 @@ export function EventOpsProvider({ children, runtimeMode }: { children: React.Re
 
   useEffect(() => {
     if (!window.location.pathname.startsWith("/admin")) return;
-    const refresh = () => void refreshOperations();
-    const timer = window.setInterval(refresh, 3_000);
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === "visible") refresh();
+    const refreshWhenActive = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) {
+        void refreshOperations();
+      }
     };
+    const rapidDemo = new URLSearchParams(window.location.search).get("rapidDemo") === "1";
+    const timer = window.setInterval(refreshWhenActive, rapidDemo ? 100 : 3_000);
+    const refreshWhenVisible = () => refreshWhenActive();
     document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("online", refreshWhenActive);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("online", refreshWhenActive);
       abortRef.current?.abort();
     };
   }, [refreshOperations]);

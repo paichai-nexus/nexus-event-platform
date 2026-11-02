@@ -209,13 +209,15 @@ export class PostgresTestJudgeRepository implements JudgeRepository {
     const scores = submission ? await runPostgresTestJson<JudgeWorkspaceScore[]>(postgresRowsJson(`select criterion_id as "criterionId", score from public.judge_scores where submission_id = :'submission_id'::uuid`), { submission_id: submission.id }, { role: "authenticated", userId: judgeUserId }) : [];
     return { eventId, activeTeamId, assignedTeamIds, criteria: criteria.map((criterion) => ({ ...criterion, maxScore: Number(criterion.maxScore), order: Number(criterion.order) })), submissionId: submission?.id ?? null, status: submission?.status ?? "NOT_STARTED", scores: scores.map((score) => ({ ...score, score: Number(score.score) })), submittedAt: submission?.submittedAt ?? null };
   }
-  async saveDraft(eventId: string, teamId: string, scores: JudgeWorkspaceScore[]) {
+  async saveDraft(eventId: string, teamId: string, scores: JudgeWorkspaceScore[], judgeUserId: string) {
     const userId = await getPostgresTestRequestUserId();
+    if (judgeUserId !== userId) throw new DomainError("FORBIDDEN", "심사위원 식별자가 일치하지 않습니다.", 403);
     await runPostgresTestJson(postgresOneJson(`select saved.id from public.save_judge_scores(:'event_id'::uuid, :'team_id'::uuid, :'scores'::jsonb) saved`), { event_id: eventId, team_id: teamId, scores: JSON.stringify(scores) }, { role: "authenticated", userId });
     return this.getWorkspace(eventId, teamId, userId);
   }
-  async submit(eventId: string, teamId: string) {
+  async submit(eventId: string, teamId: string, judgeUserId: string) {
     const userId = await getPostgresTestRequestUserId();
+    if (judgeUserId !== userId) throw new DomainError("FORBIDDEN", "심사위원 식별자가 일치하지 않습니다.", 403);
     await runPostgresTestJson(postgresOneJson(`select saved.id from public.submit_judge_scores(:'event_id'::uuid, :'team_id'::uuid) saved`), { event_id: eventId, team_id: teamId }, { role: "authenticated", userId });
     return this.getWorkspace(eventId, teamId, userId);
   }
@@ -246,17 +248,17 @@ export class PostgresTestJudgeRepository implements JudgeRepository {
 
 function toTeam(row: Team): Team {
   const profile = finalistProfileForName(row.name);
-  return { ...row, leaderName: profile?.leaderName ?? null, memberNames: profile?.memberNames ?? [], topic: profile?.topic ?? null, promotionEnabled: Boolean(profile), order: Number(row.order), status: row.status === "READY" ? "READY" : row.status };
+  return { ...row, department: row.department ?? null, advisorName: row.advisorName ?? null, leaderName: row.leaderName ?? profile?.leaderName ?? null, memberNames: row.memberNames?.length ? row.memberNames : profile?.memberNames ?? [], topic: row.topic ?? profile?.topic ?? null, promotionEnabled: row.promotionEnabled ?? Boolean(profile), order: Number(row.order), status: row.status === "READY" ? "READY" : row.status };
 }
 
 export class PostgresTestTeamRepository implements TeamRepository {
   async getTeams(eventId: string) {
-    const rows = await runPostgresTestJson<Team[]>(postgresRowsJson(`select id, name, presentation_order as "order", category, case when status = 'WAITING' then 'READY' else status::text end as status, active, null::text as "leaderName", '[]'::jsonb as "memberNames", null::text as topic, false as "promotionEnabled" from public.teams where event_id = :'event_id'::uuid order by presentation_order`), { event_id: eventId }, { role: "service_role" });
+    const rows = await runPostgresTestJson<Team[]>(postgresRowsJson(`select id, name, department, advisor_name as "advisorName", leader_name as "leaderName", to_jsonb(member_names) as "memberNames", presentation_topic as topic, promotion_enabled as "promotionEnabled", presentation_order as "order", category, case when status = 'WAITING' then 'READY' else status::text end as status, active from public.teams where event_id = :'event_id'::uuid order by presentation_order`), { event_id: eventId }, { role: "service_role" });
     return rows.map(toTeam);
   }
   async updateTeam(update: TeamUpdate) {
     const userId = await getPostgresTestRequestUserId();
-    const row = await runPostgresTestJson<Team | null>(postgresOneJson(`update public.teams set name = nullif(trim(:'name'), ''), presentation_order = :'order'::int, category = :'category'::public.team_category, status = :'status'::public.team_status, active = :'active'::boolean where id = :'id'::uuid and event_id = :'event_id'::uuid returning id, name, presentation_order as "order", category, case when status = 'WAITING' then 'READY' else status::text end as status, active, null::text as "leaderName", '[]'::jsonb as "memberNames", null::text as topic, false as "promotionEnabled"`), { id: update.id, event_id: update.eventId, name: update.name ?? "", order: update.order, category: update.category, status: update.status === "READY" ? "WAITING" : update.status, active: String(update.active) }, { role: "authenticated", userId });
+    const row = await runPostgresTestJson<Team | null>(postgresOneJson(`update public.teams set name = nullif(trim(:'name'), ''), department = nullif(trim(:'department'), ''), advisor_name = nullif(trim(:'advisor_name'), ''), leader_name = nullif(trim(:'leader_name'), ''), member_names = array(select jsonb_array_elements_text(:'member_names'::jsonb)), presentation_topic = nullif(trim(:'presentation_topic'), ''), promotion_enabled = :'promotion_enabled'::boolean, presentation_order = :'order'::int, category = :'category'::public.team_category, status = :'status'::public.team_status, active = :'active'::boolean where id = :'id'::uuid and event_id = :'event_id'::uuid returning id, name, department, advisor_name as "advisorName", leader_name as "leaderName", to_jsonb(member_names) as "memberNames", presentation_topic as topic, promotion_enabled as "promotionEnabled", presentation_order as "order", category, case when status = 'WAITING' then 'READY' else status::text end as status, active`), { id: update.id, event_id: update.eventId, name: update.name ?? "", department: update.department ?? "", advisor_name: update.advisorName ?? "", leader_name: update.leaderName ?? "", member_names: JSON.stringify(update.memberNames), presentation_topic: update.topic ?? "", promotion_enabled: String(update.promotionEnabled), order: update.order, category: update.category, status: update.status === "READY" ? "WAITING" : update.status, active: String(update.active) }, { role: "authenticated", userId });
     if (!row) throw new DomainError("DATABASE_ERROR", "참가팀을 저장하지 못했습니다.", 500);
     return toTeam(row);
   }

@@ -13,7 +13,7 @@ export type EventStatus =
 
 export type NetworkState = "ONLINE" | "OFFLINE";
 
-export type DisplayMode = "SPOTLIGHT" | "VOTE_PROGRESS" | "HOLDING" | "AWARD_REVEAL";
+export type DisplayMode = "SPOTLIGHT" | "VOTE_PROGRESS" | "HOLDING" | "RESULT_SHOW" | "AWARD_REVEAL";
 
 export type ResultStatus = "LOCKED" | "FINALIZED" | "REVEALING" | "PUBLISHED";
 
@@ -21,6 +21,7 @@ export const DISPLAY_MODE_LABELS: Record<DisplayMode, string> = {
   SPOTLIGHT: "발표팀 소개",
   VOTE_PROGRESS: "투표 현황",
   HOLDING: "대기 화면",
+  RESULT_SHOW: "심사결과 SHOW",
   AWARD_REVEAL: "수상 발표",
 };
 

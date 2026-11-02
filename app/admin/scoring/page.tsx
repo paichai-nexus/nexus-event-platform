@@ -6,6 +6,8 @@ import { OperationAlert } from "@/components/ui/OperationAlert";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { DemoScoringSimulation } from "@/components/DemoScoringSimulation";
+import { ScoringPolicyControl } from "@/components/ScoringPolicyControl";
 import { useEventOps } from "@/features/event/context/EventOpsProvider";
 import { AUDIENCE_WEIGHT, calculateScoreRows, calculateScoringResult, PROFESSIONAL_WEIGHT } from "@/features/scoring/lib/calculateScores";
 import { EVALUATION_POLICY, SCORING_POLICY_READY } from "@/features/scoring/data/evaluationPolicy";
@@ -20,11 +22,13 @@ export default function ScoringPage() {
   const judgeRate = state.judgeProgress.length ? Math.round((submittedJudges / state.judgeProgress.length) * 100) : 0;
   return (
     <div className="admin-page">
-      <SectionLabel label="SCORING" title="최종 점수 집계" description="전문심사 80% · 청중평가 20% · 읽기 전용 계산" />
+      <SectionLabel label="SCORING" title="최종 점수 집계" description="정책 충돌 검증 · 공식 결과 확정 잠금" />
       {state.runtimeMode !== "mock" && <ScoringDiagnosticsPanel eventId={state.eventId} />}
+      <ScoringPolicyControl eventId={state.eventId} />
       <section className="scoring-rule"><div><small>SCORING RULE</small><strong>전문심사 <b>{PROFESSIONAL_WEIGHT * 100}%</b></strong><strong>청중평가 <b>{AUDIENCE_WEIGHT * 100}%</b></strong></div><p>운영 화면에서 비율을 변경할 수 없습니다.</p></section>
       {productionResult.status === "SCORING_BLOCKED" && <OperationAlert level="WARNING">{productionResult.reason} 아래 값은 UI 검증용 Mock Preview이며 결과를 확정할 수 없습니다.</OperationAlert>}
       {hasTie && <OperationAlert level="CRITICAL">동점 팀이 존재합니다. 공식 동점 처리 규정을 확인하세요.</OperationAlert>}
+      {state.runtimeMode === "mock" && <DemoScoringSimulation />}
       <section className="scoring-layout">
         <article className="admin-card">
           <PanelHeader label="SCORE TABLE" title="최종 점수 미리보기" aside={<span className="mock-note">MOCK SCORE</span>} />

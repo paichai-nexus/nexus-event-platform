@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { readAudienceSessionToken } from "@/lib/attendance/sessionCookie";
+import { readAudienceJuryAuthToken } from "@/lib/audience-jury/authCookie";
 import { usesPersistentStorage, isMockRuntime } from "@/lib/config/runtime";
 import { DomainError, toErrorResponse } from "@/lib/errors/domainError";
 import { getVoteRepository } from "@/lib/repositories/repositoryFactory";
@@ -7,8 +8,8 @@ import { getVoteRepository } from "@/lib/repositories/repositoryFactory";
 const eventSchema = z.string().uuid().optional();
 
 function requireSession(request: Request) {
-  const token = readAudienceSessionToken(request);
-  if (!token) throw new DomainError("FORBIDDEN", "현장 입장을 먼저 완료해주세요.", 403);
+  const token = isMockRuntime() ? readAudienceJuryAuthToken(request) : readAudienceSessionToken(request);
+  if (!token) throw new DomainError("FORBIDDEN", "청중평가단 본인 인증을 먼저 완료해주세요.", 403);
   return token;
 }
 

@@ -10,6 +10,7 @@ import { downloadCsv } from "@/features/export/lib/downloadCsv";
 import { calculateScoreRows } from "@/features/scoring/lib/calculateScores";
 import { SCORING_POLICY_READY } from "@/features/scoring/data/evaluationPolicy";
 import { teamDisplayName } from "@/features/event/data/teamSlots";
+import { ResultShowControl } from "@/components/ResultShowControl";
 
 const tabs = ["CHECK-IN", "AUDIENCE VOTE", "JUDGING", "FINAL RESULT", "PRIZE"] as const;
 type Tab = typeof tabs[number];
@@ -35,6 +36,7 @@ export default function ResultsPage() {
   return (
     <div className="admin-page">
       <SectionLabel label="RESULTS / EXPORT" title="결과 / 내보내기" description={state.runtimeMode === "mock" ? "명시적 Mock 데이터를 CSV로 내보냅니다." : "서버 Snapshot 데이터를 CSV로 내보냅니다."} />
+      <ResultShowControl />
       <div className="result-tabs" role="tablist" aria-label="결과 데이터 선택">{tabs.map((item) => <button key={item} role="tab" aria-selected={tab === item} onClick={() => setTab(item)}>{item}</button>)}</div>
       <section className="results-layout">
         <article className="admin-card"><PanelHeader label="DATA PREVIEW" title={tab} aside={<span className="mock-note">{rows.length} ROWS</span>} />{rows.length ? <DataTable label={`${tab} 미리보기`}><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={index}>{headers.map((header) => <td key={header}>{String(row[header])}</td>)}</tr>)}</tbody></DataTable> : <EmptyState message={tab === "FINAL RESULT" ? "공식 평가 기준과 서버 집계 연동이 확정되지 않아 최종 결과를 제공할 수 없습니다." : "아직 생성된 결과가 없습니다."} />}</article>

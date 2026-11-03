@@ -358,11 +358,6 @@ button { font: inherit; }
 }
 
 @media (min-width: 1000px) {
-  .menu-button { display: none; }
-  .site-nav { position: absolute; top: 0; right: max(32px, calc((100vw - 1320px) / 2 + 180px)); display: block; max-height: none; overflow: visible; background: transparent; }
-  .site-nav__inner { display: flex; width: auto; padding: 0; gap: 4px; }
-  .site-nav a { min-height: 76px; padding: 0 14px; border: 0; color: #d5dce5; font-size: .88rem; }
-  .site-nav a span { display: none; }
   .header-vote { min-width: 130px; }
   .hero__content { padding-left: 45px; }
   .brand strong { font-size: 1.15rem; }
@@ -387,6 +382,14 @@ button { font: inherit; }
   .award-card small { font-size: .82rem; }
   .countdown-wrap { margin-top: -72px; }
   .section--paper { margin-top: 120px; }
+}
+
+@media (min-width: 1200px) {
+  .menu-button { display: none; }
+  .site-nav { position: absolute; top: 0; right: max(32px, calc((100vw - 1320px) / 2 + 180px)); display: block; max-height: none; overflow: visible; background: transparent; }
+  .site-nav__inner { display: flex; width: auto; padding: 0; gap: 4px; }
+  .site-nav a { min-height: 76px; padding: 0 14px; border: 0; color: #d5dce5; font-size: .88rem; }
+  .site-nav a span { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

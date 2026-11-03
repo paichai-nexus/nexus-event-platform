@@ -3,14 +3,14 @@ import { resolve } from "node:path";
 
 const migrationDirectory = resolve("supabase/migrations");
 const files = (await readdir(migrationDirectory)).filter((file) => file.endsWith(".sql")).sort();
-const expected = Array.from({ length: 30 }, (_, index) => String(index + 1).padStart(3, "0"));
+const expected = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(3, "0"));
 const actual = files.map((file) => file.slice(0, 3));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-030. Received: ${actual.join(", ")}`);
+assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-031. Received: ${actual.join(", ")}`);
 
 const sqlByFile = new Map(await Promise.all(files.map(async (file) => [file, await readFile(resolve(migrationDirectory, file), "utf8")])));
 const allSql = [...sqlByFile.values()].join("\n");
@@ -35,6 +35,7 @@ const migration027 = sqlByFile.get(files.find((file) => file.startsWith("027_"))
 const migration028 = sqlByFile.get(files.find((file) => file.startsWith("028_")));
 const migration029 = sqlByFile.get(files.find((file) => file.startsWith("029_")));
 const migration030 = sqlByFile.get(files.find((file) => file.startsWith("030_")));
+const migration031 = sqlByFile.get(files.find((file) => file.startsWith("031_")));
 
 for (const pattern of [
   /events_active_team_same_event_fk/,
@@ -205,5 +206,13 @@ for (const pattern of [
   /masked_name/i,
   /revoke all on function public\.get_prize_draw_results\(uuid\) from public/i,
 ]) assert(pattern.test(migration030), `030 missing masked prize-result guard: ${pattern}`);
+
+for (const pattern of [
+  /grant usage on schema public to authenticated/i,
+  /grant select, insert, update, delete on public\.profiles to authenticated/i,
+  /grant select, update on public\.events to authenticated/i,
+  /grant select, insert, update on public\.judge_submissions to authenticated/i,
+  /grant select on public\.result_snapshots, public\.prize_draws, public\.audit_logs to authenticated/i,
+]) assert(pattern.test(migration031), `031 missing hosted Data API grant: ${pattern}`);
 
 console.log(`Migration static validation passed (${files.length} files: ${files[0]} … ${files.at(-1)}).`);

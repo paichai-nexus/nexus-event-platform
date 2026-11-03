@@ -7,8 +7,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TeamRosterImportRow } from "@/types/team-roster-import";
 
 function validate(rows: TeamRosterImportRow[]) {
-  if (rows.length !== 19 || new Set(rows.map((row) => row.order)).size !== 19 || new Set(rows.map((row) => row.name.toLowerCase())).size !== 19) throw new DomainError("VALIDATION_ERROR", "19팀의 발표순서와 팀명은 각각 고유해야 합니다.", 422);
-  if (rows.filter((row) => row.category === "STARTUP").length !== 10 || rows.filter((row) => row.category === "BUSINESS_ANALYSIS").length !== 9) throw new DomainError("VALIDATION_ERROR", "부문 구성은 창업 10팀·기업분석 9팀이어야 합니다.", 422);
+  if (rows.length !== 12 || new Set(rows.map((row) => row.order)).size !== 12 || new Set(rows.map((row) => row.name.toLowerCase())).size !== 12) throw new DomainError("VALIDATION_ERROR", "12팀의 발표순서와 팀명은 각각 고유해야 합니다.", 422);
+  if (rows.filter((row) => row.category === "STARTUP").length !== 6 || rows.filter((row) => row.category === "BUSINESS_ANALYSIS").length !== 6) throw new DomainError("VALIDATION_ERROR", "부문 구성은 창업 6팀·기업분석 6팀이어야 합니다.", 422);
 }
 export async function importTeamRoster(eventId: string, rows: TeamRosterImportRow[]) {
   validate(rows);

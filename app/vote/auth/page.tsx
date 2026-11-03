@@ -40,7 +40,7 @@ export default function AudienceJuryAuthPage() {
         <form onSubmit={authenticate}>
           <label><span>학번</span><input required autoComplete="off" inputMode="numeric" maxLength={20} placeholder="등록한 학번" value={studentNumber} onChange={(event) => setStudentNumber(event.target.value)} /></label>
           <label><span>이름</span><input required autoComplete="name" maxLength={30} placeholder="등록한 이름" value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <label className="jury-auth-card__serial"><span>PCU 참가자 비밀번호</span><input required autoComplete="off" autoCapitalize="characters" maxLength={7} placeholder="PCU-001" value={serialNumber} onChange={(event) => setSerialNumber(event.target.value.toUpperCase())} /></label>
+          <label className="jury-auth-card__serial"><span>PCU 참가자 비밀번호</span><input required autoComplete="off" autoCapitalize="characters" maxLength={7} placeholder="PCU-101" value={serialNumber} onChange={(event) => setSerialNumber(event.target.value.toUpperCase())} /></label>
           <button className="admin-button admin-button--primary" type="submit" disabled={pending || !studentNumber.trim() || !name.trim() || !serialNumber.trim()}>{pending ? "3개 정보 대조 중" : "2차 인증 후 평가 페이지 입장"}</button>
         </form>
         <p className="jury-privacy-note">세 항목 중 하나라도 일치하지 않으면 인증 세션을 발급하지 않습니다. PCU 코드는 타인과 공유하지 마세요.</p>

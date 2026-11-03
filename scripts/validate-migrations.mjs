@@ -3,14 +3,14 @@ import { resolve } from "node:path";
 
 const migrationDirectory = resolve("supabase/migrations");
 const files = (await readdir(migrationDirectory)).filter((file) => file.endsWith(".sql")).sort();
-const expected = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(3, "0"));
+const expected = Array.from({ length: 33 }, (_, index) => String(index + 1).padStart(3, "0"));
 const actual = files.map((file) => file.slice(0, 3));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-031. Received: ${actual.join(", ")}`);
+assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-033. Received: ${actual.join(", ")}`);
 
 const sqlByFile = new Map(await Promise.all(files.map(async (file) => [file, await readFile(resolve(migrationDirectory, file), "utf8")])));
 const allSql = [...sqlByFile.values()].join("\n");
@@ -36,6 +36,8 @@ const migration028 = sqlByFile.get(files.find((file) => file.startsWith("028_"))
 const migration029 = sqlByFile.get(files.find((file) => file.startsWith("029_")));
 const migration030 = sqlByFile.get(files.find((file) => file.startsWith("030_")));
 const migration031 = sqlByFile.get(files.find((file) => file.startsWith("031_")));
+const migration032 = sqlByFile.get(files.find((file) => file.startsWith("032_")));
+const migration033 = sqlByFile.get(files.find((file) => file.startsWith("033_")));
 
 for (const pattern of [
   /events_active_team_same_event_fk/,
@@ -217,5 +219,23 @@ for (const pattern of [
   /grant select, insert, update, delete on public\.promo_videos to authenticated/i,
   /grant select on public\.promo_videos to anon/i,
 ]) assert(pattern.test(migration031), `031 missing hosted Data API grant: ${pattern}`);
+
+for (const pattern of [
+  /AUDIENCE_JURY:/i,
+  /generate_series\(department_start, department_start \+ 19\)/i,
+  /jury_capacity_reached/i,
+  /session_token_hash is null/i,
+  /jsonb_array_length\(p_rows\) <> 12/i,
+  /startup_count <> 6 or analysis_count <> 6/i,
+  /update public\.teams set active = false/i,
+]) assert(pattern.test(migration032), `032 missing walk-in jury/final roster guard: ${pattern}`);
+
+for (const pattern of [
+  /active_vote_category public\.team_category/i,
+  /set_audience_category_voting_status/i,
+  /AUDIENCE_CATEGORY_VOTING_OPEN/i,
+  /selected_event\.active_vote_category is distinct from p_category/i,
+  /unique_violation then raise exception 'ALREADY_SUBMITTED'/i,
+]) assert(pattern.test(migration033), `033 missing category voting session guard: ${pattern}`);
 
 console.log(`Migration static validation passed (${files.length} files: ${files[0]} … ${files.at(-1)}).`);

@@ -10,12 +10,12 @@ export const AUDIENCE_JURY_DEPARTMENTS = [
 export type AudienceJuryDepartment = typeof AUDIENCE_JURY_DEPARTMENTS[number];
 
 export const AUDIENCE_JURY_PCU_RANGES: Record<AudienceJuryDepartment, { start: number; end: number }> = {
-  "경영학과": { start: 1, end: 20 },
-  "IT경영정보학과": { start: 21, end: 40 },
-  "호텔항공경영학과": { start: 101, end: 120 },
-  "관광경영학과": { start: 41, end: 60 },
-  "항공서비스학과": { start: 61, end: 80 },
-  "글로벌비즈니스학과": { start: 81, end: 100 },
+  "경영학과": { start: 101, end: 120 },
+  "IT경영정보학과": { start: 121, end: 140 },
+  "관광경영학과": { start: 141, end: 160 },
+  "항공서비스학과": { start: 161, end: 180 },
+  "글로벌비즈니스학과": { start: 181, end: 200 },
+  "호텔항공경영학과": { start: 201, end: 220 },
 };
 
 export function formatAudienceJuryPcuCode(value: number) {

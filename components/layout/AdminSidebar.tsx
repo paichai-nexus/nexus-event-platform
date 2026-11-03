@@ -5,18 +5,16 @@ import { usePathname } from "next/navigation";
 import type { RuntimeMode } from "@/lib/config/runtimePolicy";
 
 const navigation = [
-  ["▦", "Dashboard", "운영 현황", "/admin/dashboard"],
-  ["⌁", "QR 입장", "참가자 체크인", "/admin/check-in"],
-  ["☷", "예약 / 청중평가단", "서명·PCU 관리", "/admin/audience"],
-  ["◫", "행사 / 팀 관리", "발표팀 현황", "/admin/teams"],
-  ["◎", "청중평가", "실시간 투표 관리", "/admin/voting"],
-  ["✎", "심사", "심사위원 제출", "/admin/judging"],
-  ["▥", "점수 집계", "80/20 결과", "/admin/scoring"],
-  ["✦", "경품 추첨", "당첨자 추첨", "/admin/prize"],
-  ["⇩", "결과 / Export", "CSV 내보내기", "/admin/results"],
-  ["▣", "현장 전광판", "읽기 전용 송출", "/admin/display"],
-  ["◇", "QA / 리허설", "상태 시뮬레이션", "/admin/qa"],
-  ["⚙", "설정", "행사 운영 모드", "/admin/settings"],
+  ["▦", "운영 순서", "오늘 진행할 6단계", "/admin/dashboard"],
+  ["①", "1·2부 출석", "QR·출석 인원", "/admin/check-in"],
+  ["#", "PCU 관리", "예약·서명·번호표", "/admin/audience"],
+  ["②", "청중평가", "부문별 시작·마감", "/admin/voting"],
+  ["✎", "심사 점수 입력", "종이 점수 수기 입력", "/admin/judging"],
+  ["▥", "점수 집계", "청중·전문심사 검토", "/admin/scoring"],
+  ["③", "경품 추첨", "출석자 럭키드로우", "/admin/prize"],
+  ["★", "시상식", "결과 공개 제어", "/admin/ceremony"],
+  ["▣", "현장 전광판", "프로젝터 송출", "/admin/display"],
+  ["◫", "본선 12팀", "팀 정보 확인", "/admin/teams"],
 ];
 
 export function AdminSidebar({ open, onClose, runtimeMode }: { open: boolean; onClose: () => void; runtimeMode: RuntimeMode }) {

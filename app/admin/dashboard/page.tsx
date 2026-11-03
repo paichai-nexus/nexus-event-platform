@@ -1,147 +1,94 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { OperationAlert } from "@/components/ui/OperationAlert";
-import { PanelHeader } from "@/components/ui/PanelHeader";
-import { ProgressCard } from "@/components/ui/ProgressCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { useState } from "react";
 import { useEventOps } from "@/features/event/context/EventOpsProvider";
-import { calculateScoreRows } from "@/features/scoring/lib/calculateScores";
-import { DISPLAY_MODE_LABELS, EVENT_STATUS_LABELS, type DisplayMode, type EventStatus } from "@/types/event";
-import { teamDisplayName } from "@/features/event/data/teamSlots";
+import type { PartAttendanceSnapshot } from "@/types/part-attendance";
+
+type WorkflowCard = {
+  step: string; title: string; time: string; status: string;
+  tone: "success" | "blue" | "warning" | "neutral";
+  value: string; detail: string; next: string; href: string; action: string;
+  secondaryHref?: string; secondaryAction?: string;
+};
 
 export default function DashboardPage() {
-  const { state, activateTeam, completeActiveTeam, setDisplayMode, setEventStatus, setVotingStatus } = useEventOps();
+  const { state } = useEventOps();
+  const [attendance, setAttendance] = useState<PartAttendanceSnapshot | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const response = await fetch("/api/part-attendance", { cache: "no-store" }).catch(() => null);
+      const payload = response ? await response.json().catch(() => null) : null;
+      if (active && response?.ok && payload?.ok) setAttendance(payload.data as PartAttendanceSnapshot);
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 5000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+
   const submittedJudges = state.judgeProgress.filter((judge) => judge.completed === judge.total).length;
-  const scoreRows = calculateScoreRows(state.scoreInputs);
-  const hasTie = scoreRows.some((row) => row.tied);
-  const incompleteJudges = state.judgeProgress.length - submittedJudges;
-  const alertCount = incompleteJudges + (state.votingStatus !== "CLOSED" ? 1 : 0) + (hasTie ? 1 : 0) + (state.networkOverride === "OFFLINE" ? 1 : 0);
-  const currentTeam = state.teams.find((team) => team.status === "PRESENTING");
-  const registeredTeams = state.teams.filter((team) => team.name);
-  const promotedTeams = registeredTeams.filter((team) => team.promotionEnabled !== false);
-  const [promotionIndex, setPromotionIndex] = useState(0);
-  const [selectedTeamId, setSelectedTeamId] = useState("");
-  const [controlBusy, setControlBusy] = useState(false);
-  const [controlFeedback, setControlFeedback] = useState("");
-  const promotedTeam = promotedTeams[promotionIndex % Math.max(promotedTeams.length, 1)];
-  const activeVote = state.activeTeamId ? state.voteByTeam.find((team) => team.teamId === state.activeTeamId) : undefined;
-  const checkInPercent = state.registeredCount ? Math.round((state.checkInCount / state.registeredCount) * 100) : 0;
-  const votePercent = activeVote?.eligibilityCount ? Math.round((activeVote.voteCount / activeVote.eligibilityCount) * 100) : 0;
-  const judgePercent = state.judgeProgress.length ? Math.round((submittedJudges / state.judgeProgress.length) * 100) : 0;
-  const runControl = async (action: () => Promise<boolean>, success: string) => {
-    setControlBusy(true);
-    setControlFeedback("");
-    const accepted = await action();
-    setControlFeedback(accepted ? success : "상태 조건 또는 권한을 확인해주세요.");
-    setControlBusy(false);
-  };
-  const nextStatus: Partial<Record<EventStatus, { status: EventStatus; label: string }>> = {
-    SETUP: { status: "CHECK_IN_OPEN", label: "행사 시작" },
-    CHECK_IN_OPEN: { status: "VOTING_READY", label: "발표 운영 준비" },
-    VOTING_CLOSED: { status: "JUDGING", label: "심사 시작" },
-    JUDGING: { status: "SCORING", label: "점수 집계 시작" },
-    FINALIZED: { status: "ENDED", label: "행사 종료" },
-  };
-  const next = nextStatus[state.status];
+  const activeTeam = state.teams.find((team) => team.id === state.activeTeamId);
+  const voteStatus = state.votingStatus === "OPEN" ? "진행 중" : state.votingStatus === "CLOSED" ? "마감" : "대기";
+  const voteTone = state.votingStatus === "OPEN" ? "success" : state.votingStatus === "CLOSED" ? "neutral" : "warning";
 
-  return (
-    <div className="admin-page">
-      <div className="admin-page__top admin-page__top--hero">
-        <SectionLabel label="ACADEMIC FESTIVAL" title="행사 운영 현황" description="2026. 11. 04. WED · 배재대학교 21세기관" />
-        <div><StatusBadge tone="blue" className="dashboard-event-status">{EVENT_STATUS_LABELS[state.status]}</StatusBadge></div>
-      </div>
+  const cards = useMemo<WorkflowCard[]>(() => [
+    {
+      step: "01", title: "1부 출석", time: "행사 입장", status: attendance?.partOneCount ? "진행 중" : "대기", tone: attendance?.partOneCount ? "success" : "neutral",
+      value: `${attendance?.partOneCount ?? 0}명`, detail: "QR 출석 · 학과별 PCU 선착순 발급", next: "스크린에 1부 QR을 띄우고 출석을 확인하세요.",
+      href: "/admin/check-in", action: "1부 출석 관리", secondaryHref: "/admin/audience", secondaryAction: "PCU 명단 확인",
+    },
+    {
+      step: "02", title: "2부 출석", time: "2부 시작 전", status: attendance?.partTwoCount ? "진행 중" : "대기", tone: attendance?.partTwoCount ? "success" : "neutral",
+      value: `${attendance?.partTwoCount ?? 0}명`, detail: `1·2부 모두 출석 ${attendance?.bothCount ?? 0}명`, next: "2부 QR을 띄우고 럭키드로우 대상자를 확보하세요.",
+      href: "/admin/check-in", action: "2부 출석 관리",
+    },
+    {
+      step: "03", title: "청중평가", time: "15:00 / 16:00", status: voteStatus, tone: voteTone,
+      value: `${state.voteCount}건`, detail: activeTeam ? `현재 부문: ${activeTeam.category === "BUSINESS_ANALYSIS" ? "기업분석" : "창업경진"}` : "기업분석 → 창업경진 순서",
+      next: "발표 종료 후 해당 부문 투표를 시작하고, 제출 완료 뒤 마감하세요.", href: "/admin/voting", action: "투표 시작·마감",
+    },
+    {
+      step: "04", title: "점수 집계", time: "투표 마감 후", status: submittedJudges === 3 ? "입력 완료" : "입력 대기", tone: submittedJudges === 3 ? "success" : "warning",
+      value: `${submittedJudges} / 3명`, detail: "종이 심사표를 팀별·심사위원별 수기 입력", next: "심사 점수를 먼저 입력하고 청중 득표와 함께 검토하세요.",
+      href: "/admin/judging", action: "심사 점수 입력", secondaryHref: "/admin/scoring", secondaryAction: "집계표 보기",
+    },
+    {
+      step: "05", title: "럭키드로우", time: "1부 종료 / 3부", status: state.prizeHistory.length ? "진행 중" : "대기", tone: state.prizeHistory.length ? "blue" : "neutral",
+      value: `${state.prizeHistory.length}명`, detail: "출석자 대상 · 중복 당첨 자동 차단", next: "먼저 대상자 명단을 봉인한 뒤 경품별 추첨을 실행하세요.",
+      href: "/admin/prize", action: "경품 추첨 열기",
+    },
+    {
+      step: "06", title: "시상식", time: "17:10~17:30", status: state.resultStatus === "FINALIZED" ? "확정" : "잠금", tone: state.resultStatus === "FINALIZED" ? "success" : "warning",
+      value: state.resultStatus === "FINALIZED" ? "공개 가능" : "미공개", detail: "승인된 결과만 전광판에 공개", next: "점수 규정과 최종 결과 승인 후에만 공개하세요.",
+      href: "/admin/ceremony", action: "시상식 제어", secondaryHref: "/admin/display", secondaryAction: "전광판 열기",
+    },
+  ], [activeTeam, attendance, state.prizeHistory.length, state.resultStatus, state.voteCount, submittedJudges, voteStatus, voteTone]);
 
-      <section className="mode-banner">
-        <div className="mode-banner__primary"><small>EVENT STATUS</small><strong>{EVENT_STATUS_LABELS[state.status]}</strong></div>
-        <div className="mode-banner__meta"><span><small>현재 진행</small><b>{currentTeam?.name ?? "대기"}</b></span><span><small>다음 단계</small><b>{state.votingStatus === "OPEN" ? "투표 마감" : "점수 집계"}</b></span></div>
-      </section>
-
-      <section className="admin-card mission-control" aria-label="행사 통합 제어">
-        <PanelHeader label="MISSION CONTROL" title="행사 통합 제어" aside={<span className="snapshot-version">SNAPSHOT v{state.snapshotVersion}</span>} />
-        <div className="mission-control__grid">
-          <div className="mission-control__group">
-            <small>EVENT</small>
-            <strong>{EVENT_STATUS_LABELS[state.status]}</strong>
-            {next ? <button className="admin-button admin-button--primary" type="button" disabled={controlBusy} onClick={() => void runControl(() => setEventStatus(next.status), next.label)}>{next.label}</button> : <span className="control-lock">수동 전환 없음</span>}
-          </div>
-          <div className="mission-control__group mission-control__group--wide">
-            <small>PRESENTATION</small>
-            <select aria-label="발표팀 선택" value={selectedTeamId || state.activeTeamId || ""} disabled={controlBusy || Boolean(state.activeTeamId)} onChange={(event) => setSelectedTeamId(event.target.value)}>
-              <option value="">발표팀 선택</option>
-              {registeredTeams.filter((team) => team.status !== "DONE").map((team) => <option key={team.id} value={team.id}>{String(team.order).padStart(2, "0")} · {team.name}</option>)}
-            </select>
-            {state.activeTeamId
-              ? <button className="admin-button admin-button--danger" type="button" disabled={controlBusy} onClick={() => void runControl(completeActiveTeam, "발표를 완료하고 투표를 마감했습니다.")}>발표 완료</button>
-              : <button className="admin-button admin-button--primary" type="button" disabled={controlBusy || !selectedTeamId} onClick={() => void runControl(() => activateTeam(selectedTeamId), "발표팀을 시작했습니다.")}>발표 시작</button>}
-          </div>
-          <div className="mission-control__group">
-            <small>AUDIENCE VOTE</small>
-            <strong>{state.votingStatus}</strong>
-            <div className="mission-control__buttons">
-              <button className="admin-button" type="button" disabled={controlBusy || !state.activeTeamId} onClick={() => void runControl(() => setVotingStatus("OPEN"), "청중평가를 열었습니다.")}>열기</button>
-              <button className="admin-button" type="button" disabled={controlBusy || state.votingStatus !== "OPEN"} onClick={() => void runControl(() => setVotingStatus("CLOSED"), "청중평가를 마감했습니다.")}>마감</button>
-            </div>
-          </div>
-          <div className="mission-control__group mission-control__group--display">
-            <small>DISPLAY</small>
-            <strong>{DISPLAY_MODE_LABELS[state.displayMode]}</strong>
-            <div className="mission-control__buttons">
-              {(["SPOTLIGHT", "VOTE_PROGRESS", "HOLDING"] as DisplayMode[]).map((mode) => <button key={mode} className={`admin-button ${state.displayMode === mode ? "admin-button--primary" : ""}`} type="button" disabled={controlBusy || (mode === "SPOTLIGHT" && !state.activeTeamId)} onClick={() => void runControl(() => setDisplayMode(mode), `${DISPLAY_MODE_LABELS[mode]} 화면으로 전환했습니다.`)}>{DISPLAY_MODE_LABELS[mode]}</button>)}
-            </div>
-          </div>
-        </div>
-        <p className="mission-control__feedback" role="status">{controlFeedback || `서버 시각 ${state.serverTime ? new Date(state.serverTime).toLocaleTimeString("ko-KR") : "동기화 중"}`}</p>
-      </section>
-
-      <section className="stat-grid stat-grid--6" aria-label="핵심 운영 수치">
-        <StatCard label="전체 등록" value={state.registeredCount} detail="명" icon="✦" />
-        <StatCard label="입장 완료" value={state.checkInCount} detail={`/ ${state.registeredCount} · ${checkInPercent}%`} accent icon="↳" progress={checkInPercent} />
-        <StatCard label="현재 팀 청중평가" value={activeVote?.voteCount ?? 0} detail={`/ ${activeVote?.eligibilityCount ?? 0} · ${votePercent}%`} icon="◎" progress={votePercent} />
-        <StatCard label="심사 제출" value={`${submittedJudges} / ${state.judgeProgress.length}`} detail={`${judgePercent}% 완료`} icon="✎" progress={judgePercent} />
-        <StatCard label="본선 팀" value={registeredTeams.length} detail={`/ ${state.teams.length} 슬롯`} icon="◫" />
-        <StatCard label="운영 알림" value={alertCount} detail="건 확인 필요" icon="!" />
-      </section>
-
-      <section className="admin-grid admin-grid--3">
-        <ProgressCard label="CHECK-IN" value={state.checkInCount} total={state.registeredCount} />
-        <ProgressCard label="AUDIENCE VOTE" value={activeVote?.voteCount ?? 0} total={activeVote?.eligibilityCount ?? 0} />
-        <ProgressCard label="JUDGE STATUS" value={submittedJudges} total={state.judgeProgress.length} />
-      </section>
-
-      <section className="admin-card team-promotion-card">
-        <PanelHeader label="TEAM PROMOTION" title="본선 팀 홍보" aside={<span className="mock-note">{promotedTeams.length} TEAMS</span>} />
-        {promotedTeam ? <div className="team-promotion-card__body">
-          <div className="team-promotion-card__order"><span>{String(promotedTeam.order).padStart(2, "0")}</span><small>{promotedTeam.category === "STARTUP" ? "창업 부문" : "기업분석 부문"}</small></div>
-          <div className="team-promotion-card__content"><strong>{promotedTeam.name}</strong><p>{promotedTeam.topic ?? "발표 주제 준비 중"}</p><dl><div><dt>대표자</dt><dd>{promotedTeam.leaderName ?? "미등록"}</dd></div><div><dt>팀원</dt><dd>{promotedTeam.memberNames?.join(", ") || "미등록"}</dd></div></dl></div>
-          <div className="team-promotion-card__controls"><button className="admin-button" type="button" onClick={() => setPromotionIndex((index) => (index - 1 + promotedTeams.length) % promotedTeams.length)}>이전 팀</button><b>{promotionIndex % promotedTeams.length + 1} / {promotedTeams.length}</b><button className="admin-button admin-button--primary" type="button" onClick={() => setPromotionIndex((index) => (index + 1) % promotedTeams.length)}>다음 팀</button></div>
-        </div> : <p className="muted-copy">홍보 가능한 등록 팀이 없습니다.</p>}
-      </section>
-
-      <section className="dashboard-bottom-grid">
-        <article className="admin-card">
-          <PanelHeader label="CURRENT SESSION" title="본선 팀 진행" aside={<StatusBadge tone="blue">{currentTeam?.name ?? "대기"}</StatusBadge>} />
-          {currentTeam && <div className="current-team-card"><small>현재 발표 중</small><strong>{teamDisplayName(currentTeam)}</strong><span>{currentTeam.category === "STARTUP" ? "창업 부문" : "기업분석 부문"}</span></div>}
-          <div className="team-timeline">
-            {registeredTeams.map((team) => <div key={team.id} className={`team-timeline__item team-timeline__item--${team.status.toLowerCase()}`}><span>{String(team.order).padStart(2, "0")}</span><strong>{teamDisplayName(team)}</strong><small>{team.status === "DONE" ? "완료" : team.status === "PRESENTING" ? "발표 중" : "대기"}</small></div>)}
-          </div>
-        </article>
-        <article className="admin-card">
-          <PanelHeader label="OPERATION ALERT" title="운영 알림" aside={<span className="panel-count">{alertCount}</span>} />
-          <div className="alert-list">
-            {incompleteJudges > 0 && <OperationAlert level="WARNING">심사위원 {incompleteJudges}명 미제출</OperationAlert>}
-            {state.votingStatus !== "CLOSED" && <OperationAlert level="WARNING">청중평가가 아직 마감되지 않았습니다.</OperationAlert>}
-            {hasTie && <OperationAlert level="CRITICAL">동점 팀이 존재합니다. 공식 처리 규정을 확인하세요.</OperationAlert>}
-            {state.networkOverride === "OFFLINE" && <OperationAlert level="CRITICAL">네트워크가 Offline 상태입니다.</OperationAlert>}
-          </div>
-        </article>
-        <article className="admin-card recent-activity">
-          <PanelHeader label="RECENT ACTIVITY" title="최근 활동" aside={<span className="mock-note">MOCK</span>} />
-          <ol>{state.activities.slice(0, 6).map((item) => <li key={item.id}><time>{item.time}</time><span /><div><small>{item.category}</small><p>{item.message}</p></div></li>)}</ol>
-        </article>
-      </section>
+  return <div className="admin-page admin-ops-home">
+    <div className="admin-page__top admin-page__top--hero">
+      <SectionLabel label="TODAY'S OPERATIONS" title="행사 운영 순서" description="2026. 11. 04. · 위에서 아래 순서대로 진행하세요" />
+      <div><StatusBadge tone={state.snapshotError ? "danger" : "success"}>{state.snapshotError ? "서버 확인 필요" : "서버 연결됨"}</StatusBadge></div>
     </div>
-  );
+
+    <OperationAlert level="INFO">청중평가는 PCU·학과·학번·이름 인증 후 해당 부문에서 순위 구분 없이 예상 1위 후보 2팀을 선택합니다. 심사위원 종이 점수는 관리자가 수기로 입력합니다.</OperationAlert>
+
+    <section className="ops-workflow-grid" aria-label="행사 당일 주요 업무">
+      {cards.map((card) => <article className="admin-card ops-workflow-card" key={card.step}>
+        <header><span>{card.step}</span><div><small>{card.time}</small><h2>{card.title}</h2></div><StatusBadge tone={card.tone}>{card.status}</StatusBadge></header>
+        <div className="ops-workflow-card__metric"><strong>{card.value}</strong><span>{card.detail}</span></div>
+        <p><b>다음 작업</b>{card.next}</p>
+        <footer><Link className="admin-button admin-button--primary" href={card.href}>{card.action}</Link>{card.secondaryHref && <Link className="admin-button" href={card.secondaryHref}>{card.secondaryAction}</Link>}</footer>
+      </article>)}
+    </section>
+
+    <section className="admin-card ops-quick-links">
+      <div><small>운영 보조</small><strong>필요할 때만 여세요</strong></div>
+      <nav><Link href="/admin/teams">본선 12팀 확인</Link><Link href="/admin/display">현장 전광판</Link><Link href="/admin/results">결과·CSV</Link><Link href="/admin/settings">운영 설정</Link></nav>
+    </section>
+  </div>;
 }

@@ -11,7 +11,7 @@ import {
 
 const CAPACITY_PER_DEPARTMENT = 20;
 const DEFAULT_EVENT_ID = "00000000-0000-4000-8000-000000000100";
-const PARTICIPANT_CODE_PATTERN = /^PCU-(?:00[1-9]|0[1-9][0-9]|1[01][0-9]|120)$/;
+const PARTICIPANT_CODE_PATTERN = /^PCU-(?:1(?:0[1-9]|[1-9][0-9])|2(?:0[0-9]|1[0-9]|20))$/;
 
 type StoredRegistration = AudienceJuryRegistration & { eventId: string; sessionToken: string };
 type JuryGlobal = typeof globalThis & { __mockAudienceJury?: StoredRegistration[] };

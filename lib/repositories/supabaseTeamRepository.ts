@@ -26,8 +26,8 @@ function toTeam(row: TeamRow): Team {
   return {
     id: row.id,
     name: row.name,
-    department: row.department,
-    advisorName: row.advisor_name,
+    department: row.department ?? profile?.department ?? null,
+    advisorName: row.advisor_name ?? profile?.advisorName ?? null,
     leaderName: row.leader_name ?? profile?.leaderName ?? null,
     memberNames: row.member_names?.length ? row.member_names : profile?.memberNames ?? [],
     topic: row.presentation_topic ?? profile?.topic ?? null,
@@ -52,6 +52,7 @@ export class SupabaseTeamRepository implements TeamRepository {
       .from("teams")
       .select("id, name, department, advisor_name, leader_name, member_names, presentation_topic, promotion_enabled, presentation_order, category, status, active")
       .eq("event_id", eventId)
+      .eq("active", true)
       .order("presentation_order");
     if (error) throw new DomainError("DATABASE_ERROR", "참가팀을 조회하지 못했습니다.", 500);
     return (data as TeamRow[]).map(toTeam);

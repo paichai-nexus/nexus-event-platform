@@ -75,15 +75,15 @@ test("team vote rejects duplicate and closed submissions", () => {
   assert.equal(canSubmitVote("CLOSED", [], "TEAM-01"), false);
 });
 
-test("team slots preserve the 19 / 10 / 9 structure with 15 supplied team profiles", () => {
+test("team slots preserve the official 12 / 6 / 6 finalist structure", () => {
   const teams = createEmptyTeamSlots();
-  assert.equal(teams.length, 19);
-  assert.equal(teams.filter((team) => team.category === "STARTUP").length, 10);
-  assert.equal(teams.filter((team) => team.category === "BUSINESS_ANALYSIS").length, 9);
-  assert.equal(teams.filter((team) => team.name).length, 15);
-  assert.equal(teams.filter((team) => team.promotionEnabled).length, 15);
+  assert.equal(teams.length, 12);
+  assert.equal(teams.filter((team) => team.category === "STARTUP").length, 6);
+  assert.equal(teams.filter((team) => team.category === "BUSINESS_ANALYSIS").length, 6);
+  assert.equal(teams.filter((team) => team.name).length, 12);
+  assert.equal(teams.filter((team) => team.promotionEnabled).length, 12);
   assert.equal(teams.find((team) => team.name === "EVER OASIS")?.leaderName, null);
-  assert.deepEqual(teams.find((team) => team.name === "밋턴")?.memberNames, []);
+  assert.deepEqual(teams.find((team) => team.name === "연애하자")?.memberNames, ["안성열", "최병현", "홍경훈"]);
 });
 
 test("80/20 scoring preserves ties without forced ordering", () => {

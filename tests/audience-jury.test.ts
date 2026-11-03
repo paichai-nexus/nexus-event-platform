@@ -27,7 +27,7 @@ describe("학과별 청중평가단 선착순 등록", () => {
     expect(() => registerMockAudienceJury("session-2", { department: "경영학과", studentNumber: "20260002", name: "이학생" }))
       .toThrow("예약 명단의 이름·학과·학번과 일치하지 않습니다.");
     const accepted = registerMockAudienceJury("session-3", { department: "경영학과", studentNumber: "20260001", name: "김학생" });
-    expect(accepted.registration?.serialNumber).toBe("PCU-001");
+    expect(accepted.registration?.serialNumber).toBe("PCU-101");
   });
 
   it("학과별 등록 순번과 전체 120명 정원을 계산한다", () => {
@@ -64,8 +64,8 @@ describe("학과별 청중평가단 선착순 등록", () => {
   it("등록된 학번, 이름과 PCU 코드가 모두 일치할 때만 인증 세션을 발급한다", () => {
     const state = registerMockAudienceJury("registration-session", { department: "경영학과", studentNumber: "20260001", name: "김학생" });
     const serialNumber = state.registration?.serialNumber ?? "";
-    expect(serialNumber).toBe("PCU-001");
-    expect(() => authenticateMockAudienceJury({ studentNumber: "20260001", name: "김학생", serialNumber: "PCU-002" }))
+    expect(serialNumber).toBe("PCU-101");
+    expect(() => authenticateMockAudienceJury({ studentNumber: "20260001", name: "김학생", serialNumber: "PCU-102" }))
       .toThrow("등록된 이름, 학번 또는 시리얼 번호가 일치하지 않습니다.");
     expect(() => authenticateMockAudienceJury({ studentNumber: "20260001", name: "다른이름", serialNumber }))
       .toThrow("등록된 이름, 학번 또는 시리얼 번호가 일치하지 않습니다.");
@@ -75,7 +75,7 @@ describe("학과별 청중평가단 선착순 등록", () => {
     expect(verifyMockAudienceJuryAuth("registration-session")).toBeNull();
   });
 
-  it("학과별 PCU-001~120 구간을 20명씩 발급하고 럭키드로우 후보를 격리한다", () => {
+  it("학과별 PCU-101~220 구간을 20명씩 발급하고 럭키드로우 후보를 격리한다", () => {
     const departments = ["경영학과", "IT경영정보학과", "호텔항공경영학과", "관광경영학과", "항공서비스학과", "글로벌비즈니스학과"] as const;
     let participant = 0;
     departments.forEach((department) => {
@@ -90,12 +90,12 @@ describe("학과별 청중평가단 선착순 등록", () => {
     });
     const pool = getMockAudienceJuryDrawPool();
     expect(pool).toHaveLength(120);
-    expect(pool[0]?.participantCode).toBe("PCU-001");
-    expect(pool[19]?.participantCode).toBe("PCU-020");
-    expect(pool[20]?.participantCode).toBe("PCU-021");
-    expect(pool[119]?.participantCode).toBe("PCU-120");
-    expect(pool.find((candidate) => candidate.department === "호텔항공경영학과")?.participantCode).toBe("PCU-101");
-    expect(pool.some((candidate) => candidate.participantCode === "PCU-000")).toBe(false);
+    expect(pool[0]?.participantCode).toBe("PCU-101");
+    expect(pool[19]?.participantCode).toBe("PCU-120");
+    expect(pool[20]?.participantCode).toBe("PCU-121");
+    expect(pool[119]?.participantCode).toBe("PCU-220");
+    expect(pool.find((candidate) => candidate.department === "호텔항공경영학과")?.participantCode).toBe("PCU-201");
+    expect(pool.some((candidate) => candidate.participantCode === "PCU-100")).toBe(false);
     expect(new Set(pool.map((candidate) => candidate.participantCode))).toHaveLength(120);
   });
 });

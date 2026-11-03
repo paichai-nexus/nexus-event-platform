@@ -37,4 +37,16 @@ describe("part attendance", () => {
     submitMockPartAttendance({ department: "관광경영학과", studentNumber: "20268888", name: "1부만", part: 1 });
     expect(getMockPartAttendanceDrawPool()).toEqual([expect.stringMatching(/^ENT-/)]);
   });
+
+  test("1부 출석은 학과별 20명까지만 연속 PCU 코드를 발급한다", () => {
+    const accepted = Array.from({ length: 20 }, (_, index) => submitMockPartAttendance({
+      department: "경영학과", studentNumber: `2026${String(index).padStart(4, "0")}`, name: `학생${index}`, part: 1,
+    }));
+    expect(accepted[0].record.jurySerialNumber).toBe("PCU-101");
+    expect(accepted[19].record.jurySerialNumber).toBe("PCU-120");
+    const overflow = submitMockPartAttendance({ department: "경영학과", studentNumber: "20269999", name: "초과학생", part: 1 });
+    expect(overflow.record.jurySerialNumber).toBeNull();
+    expect(overflow.record.juryCapacityReached).toBe(true);
+    expect(getMockPartAttendanceSnapshot().partOneCount).toBe(21);
+  });
 });

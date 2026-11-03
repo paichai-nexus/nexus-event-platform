@@ -11,6 +11,8 @@ export type PartAttendanceRecord = {
   studentNumber: string;
   name: string;
   submittedAt: string;
+  jurySerialNumber: string | null;
+  juryCapacityReached: boolean;
 };
 
 export type PartAttendanceSnapshot = {

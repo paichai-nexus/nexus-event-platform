@@ -19,6 +19,15 @@ function participantCode(studentNumber: string) {
   return `ENT-${createHash("sha256").update(studentNumber).digest("hex").slice(0, 8).toUpperCase()}`;
 }
 
+const departmentStarts: Record<AudienceJuryDepartment, number> = {
+  "경영학과": 101,
+  "IT경영정보학과": 121,
+  "관광경영학과": 141,
+  "항공서비스학과": 161,
+  "글로벌비즈니스학과": 181,
+  "호텔항공경영학과": 201,
+};
+
 export function resetMockPartAttendance() {
   storeGlobal.__mockPartAttendance = [];
 }
@@ -49,7 +58,14 @@ export function submitMockPartAttendance(input: {
     studentNumber,
     name,
     submittedAt: new Date().toISOString(),
+    jurySerialNumber: null,
+    juryCapacityReached: false,
   };
+  if (input.part === 1) {
+    const accepted = records().filter((row) => row.eventId === eventId && row.part === 1 && row.department === input.department && row.jurySerialNumber).length;
+    record.juryCapacityReached = accepted >= 20;
+    if (!record.juryCapacityReached) record.jurySerialNumber = `PCU-${String(departmentStarts[input.department] + accepted).padStart(3, "0")}`;
+  }
   records().push(record);
   return { record: structuredClone(record), duplicate: false };
 }

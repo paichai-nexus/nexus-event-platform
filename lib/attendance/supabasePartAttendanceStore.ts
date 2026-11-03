@@ -63,6 +63,8 @@ export async function submitSupabasePartAttendance(input: {
     id: String(value.id), eventId, participantCode: String(value.participant_code), part: Number(value.part) as EventPart,
     department: String(value.department) as AudienceJuryDepartment, studentNumber: input.studentNumber.trim().toUpperCase(),
     name: input.name.trim(), submittedAt: String(value.submitted_at),
+    jurySerialNumber: value.jury_serial_number ? String(value.jury_serial_number) : null,
+    juryCapacityReached: Boolean(value.jury_capacity_reached),
   };
   return { record, duplicate: Boolean(value.duplicate), snapshot: await getSupabasePartAttendanceSnapshot(eventId) };
 }

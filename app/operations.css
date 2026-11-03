@@ -196,6 +196,39 @@
 .mission-control__buttons .admin-button { flex: 1 1 auto; min-height: 39px; padding-inline: 9px; font-size: .6rem; }
 .control-lock { color: #738397; font-size: .65rem; }
 .mission-control__feedback { min-height: 20px; margin: 12px 0 0; color: #8fa1b4; font-size: .65rem; }
+
+/* Event-day home: the six actions operators need, in execution order. */
+.admin-ops-home { display: grid; gap: 18px; }
+.ops-workflow-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.ops-workflow-card { display: grid; min-height: 285px; padding: 18px; grid-template-rows: auto auto 1fr auto; gap: 16px; border-color: rgba(21,148,255,.28); }
+.ops-workflow-card > header { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 11px; }
+.ops-workflow-card > header > span:first-child { display: grid; width: 44px; height: 44px; place-items: center; background: var(--blue); color: white; font-size: .78rem; font-weight: 950; box-shadow: 4px 4px 0 rgba(0,0,0,.3); }
+.ops-workflow-card header div { display: grid; gap: 2px; }
+.ops-workflow-card header small { color: var(--blue-bright); font-size: .58rem; font-weight: 900; letter-spacing: .08em; }
+.ops-workflow-card h2 { margin: 0; font-size: 1.08rem; letter-spacing: -.04em; }
+.ops-workflow-card__metric { display: grid; min-height: 84px; padding: 14px; align-content: center; border: 1px solid rgba(255,255,255,.08); background: #07111d; gap: 4px; }
+.ops-workflow-card__metric strong { color: white; font-size: 1.9rem; letter-spacing: -.06em; }
+.ops-workflow-card__metric span { color: #8ea0b4; font-size: .68rem; }
+.ops-workflow-card > p { display: grid; margin: 0; align-content: start; color: #aab5c2; font-size: .72rem; line-height: 1.65; }
+.ops-workflow-card > p b { margin-bottom: 3px; color: #58b4ff; font-size: .58rem; letter-spacing: .08em; }
+.ops-workflow-card > footer { display: flex; gap: 7px; }
+.ops-workflow-card > footer .admin-button { flex: 1; min-height: 44px; }
+.ops-quick-links { display: flex; padding: 17px 19px; align-items: center; justify-content: space-between; gap: 20px; }
+.ops-quick-links > div { display: grid; gap: 3px; }
+.ops-quick-links small { color: var(--blue-bright); font-size: .57rem; font-weight: 900; letter-spacing: .1em; }
+.ops-quick-links nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.ops-quick-links a { padding: 9px 12px; border: 1px solid var(--line); color: #c2cfdd; font-size: .66rem; font-weight: 800; }
+.ops-quick-links a:hover { border-color: var(--blue-bright); color: white; }
+.category-vote-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.category-vote-control { display: grid; min-height: 260px; padding: 20px; align-content: start; gap: 9px; }
+.category-vote-control.is-open { border-color: #39d598; box-shadow: inset 0 0 0 1px rgba(57,213,152,.15),0 14px 40px rgba(19,154,109,.12); }
+.category-vote-control > header { display: flex; align-items: center; justify-content: space-between; }
+.category-vote-control > header > span { color: var(--blue-bright); font-size: .61rem; font-weight: 950; letter-spacing: .12em; }
+.category-vote-control h2 { margin: 8px 0 0; font-size: 1.35rem; }
+.category-vote-control p,.category-vote-control small { margin: 0; color: #8ea0b4; }
+.category-vote-control > strong { margin-top: 12px; color: white; font-size: 1.7rem; }
+.category-vote-control > div { display: flex; margin-top: 14px; gap: 8px; }
+.category-vote-control > div .admin-button { flex: 1; min-height: 46px; }
 .control-panel p { width: 100%; margin: 0 0 12px; color: var(--muted); font-size: .72rem; }
 .control-panel p strong { margin-left: 8px; color: white; }
 .submission-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -477,6 +510,18 @@
 @media (prefers-reduced-motion: reduce) {
   .state-spinner { animation: none; }
   .admin-sidebar { transition: none; }
+}
+
+@media (max-width: 1180px) {
+  .ops-workflow-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 720px) {
+  .ops-workflow-grid { grid-template-columns: 1fr; }
+  .ops-workflow-card { min-height: 0; }
+  .ops-quick-links { align-items: stretch; flex-direction: column; }
+  .ops-quick-links nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .category-vote-controls { grid-template-columns: 1fr; }
 }
 
 /* 2026 operations control-room visual system */

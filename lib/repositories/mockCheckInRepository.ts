@@ -37,6 +37,18 @@ function getStore(): MockCheckInStore {
   return globalForCheckIns.__eventCheckIns;
 }
 
+
+/** REHEARSAL ONLY. Seeded baseCount represents simulated physical check-ins, not live guests. */
+export function getMockPrizeEligibleParticipantIds(): string[] {
+  const store = getStore();
+  const seeded = Array.from({ length: store.baseCount }, (_, index) => `#${String(index + 4).padStart(4, "0")}`);
+  const general = [...store.records.values()].map((record) => record.participantId);
+  const audience = [...store.audienceRecords.values()]
+    .filter((record) => record.exitedAt === null)
+    .map((record) => record.participantId);
+  return [...new Set([...seeded, ...general, ...audience])];
+}
+
 export function resetMockCheckIns() {
   globalForCheckIns.__eventCheckIns = { baseCount: 0, records: new Map(), audienceRecords: new Map() };
 }

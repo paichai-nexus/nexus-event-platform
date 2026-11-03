@@ -49,6 +49,21 @@ export class SupabaseVoteRepository implements VoteRepository {
     return toState(data);
   }
 
+  async register(eventId: string | undefined, sessionToken: string) {
+    const supabase = this.audienceClient();
+    const { error } = await supabase.rpc("register_audience_voter", {
+      p_event_id: eventId ?? null,
+      p_session_token: sessionToken,
+    });
+    if (error) {
+      if (error.message.includes("EVENT_NOT_FOUND") || error.message.includes("EVENT_CLOSED")) {
+        throw new DomainError("EVENT_CLOSED", "현재 신청 가능한 행사가 없습니다.", 409);
+      }
+      throw new DomainError("DATABASE_ERROR", "평가단 신청을 저장하지 못했습니다.", 500);
+    }
+    return this.getState(eventId, sessionToken);
+  }
+
   async submit(eventId: string | undefined, sessionToken: string) {
     const supabase = this.audienceClient();
     const { error } = await supabase.rpc("submit_audience_vote", {
@@ -58,7 +73,7 @@ export class SupabaseVoteRepository implements VoteRepository {
     if (error) {
       const message = error.message ?? "";
       if (message.includes("VOTING_CLOSED")) throw new DomainError("EVENT_CLOSED", "현재 투표가 열려 있지 않습니다.", 409);
-      if (message.includes("NOT_ELIGIBLE")) throw new DomainError("FORBIDDEN", "현장 입장을 완료한 참가자만 투표할 수 있습니다.", 403);
+      if (message.includes("NOT_ELIGIBLE")) throw new DomainError("FORBIDDEN", "청중평가단 신청을 완료한 참가자만 평가할 수 있습니다.", 403);
       if (message.includes("ALREADY_SUBMITTED")) {
         const state = await this.getState(eventId, sessionToken);
         if (state.submissionId) return state;

@@ -3,6 +3,7 @@ import { attachMockReservationPcuCode, verifyAndRecordMockReservationQr } from "
 import {
   AUDIENCE_JURY_DEPARTMENTS,
   AUDIENCE_JURY_PCU_RANGES,
+  formatAudienceJuryPcuCode,
   type AudienceJuryDepartment,
   type AudienceJuryRegistration,
   type AudienceJuryState,
@@ -10,7 +11,7 @@ import {
 
 const CAPACITY_PER_DEPARTMENT = 20;
 const DEFAULT_EVENT_ID = "00000000-0000-4000-8000-000000000100";
-const PARTICIPANT_CODE_PATTERN = /^PCU(?:1(?:0[1-9]|1[0-9]|20)|2(?:0[1-9]|1[0-9]|20)|3(?:0[1-9]|1[0-9]|20)|4(?:0[1-9]|1[0-9]|20)|5(?:0[1-9]|1[0-9]|20)|6(?:0[1-9]|1[0-9]|20))$/;
+const PARTICIPANT_CODE_PATTERN = /^PCU-(?:00[1-9]|0[1-9][0-9]|1[01][0-9]|120)$/;
 
 type StoredRegistration = AudienceJuryRegistration & { eventId: string; sessionToken: string };
 type JuryGlobal = typeof globalThis & { __mockAudienceJury?: StoredRegistration[] };
@@ -42,7 +43,7 @@ function participantCode(department: AudienceJuryDepartment, position: number) {
     throw new DomainError("INVALID_STATE", "청중평가단 참가자 코드를 더 이상 발급할 수 없습니다.", 409);
   }
   const range = AUDIENCE_JURY_PCU_RANGES[department];
-  return `PCU${range.start + position - 1}`;
+  return formatAudienceJuryPcuCode(range.start + position - 1);
 }
 
 function normalizeSerialNumber(value: string) {
@@ -75,8 +76,8 @@ export function getMockAudienceJuryState(sessionToken: string, eventId?: string)
         accepted,
         remaining: CAPACITY_PER_DEPARTMENT - accepted,
         capacity: CAPACITY_PER_DEPARTMENT,
-        pcuStart: `PCU${range.start}`,
-        pcuEnd: `PCU${range.end}`,
+        pcuStart: formatAudienceJuryPcuCode(range.start),
+        pcuEnd: formatAudienceJuryPcuCode(range.end),
       };
     }),
     totalAccepted: eventRegistrations.length,

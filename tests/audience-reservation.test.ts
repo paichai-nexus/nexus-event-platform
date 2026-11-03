@@ -66,7 +66,7 @@ describe("청중평가 예약·서명·QR 명단", () => {
 
   it("청중평가단 확정 후 예약자 명단에 PCU 코드를 연결한다", () => {
     importMockAudienceReservations([{ department: "경영학과", studentNumber: "20260001", name: "김학생" }]);
-    attachMockReservationPcuCode("20260001", "PCU101");
-    expect(getMockAudienceReservations().rows[0]?.pcuCode).toBe("PCU101");
+    attachMockReservationPcuCode("20260001", "PCU-001");
+    expect(getMockAudienceReservations().rows[0]?.pcuCode).toBe("PCU-001");
   });
 });

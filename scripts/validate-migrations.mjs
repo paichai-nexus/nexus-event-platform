@@ -3,14 +3,14 @@ import { resolve } from "node:path";
 
 const migrationDirectory = resolve("supabase/migrations");
 const files = (await readdir(migrationDirectory)).filter((file) => file.endsWith(".sql")).sort();
-const expected = Array.from({ length: 25 }, (_, index) => String(index + 1).padStart(3, "0"));
+const expected = Array.from({ length: 27 }, (_, index) => String(index + 1).padStart(3, "0"));
 const actual = files.map((file) => file.slice(0, 3));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-025. Received: ${actual.join(", ")}`);
+assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-027. Received: ${actual.join(", ")}`);
 
 const sqlByFile = new Map(await Promise.all(files.map(async (file) => [file, await readFile(resolve(migrationDirectory, file), "utf8")])));
 const allSql = [...sqlByFile.values()].join("\n");
@@ -30,6 +30,8 @@ const migration022 = sqlByFile.get(files.find((file) => file.startsWith("022_"))
 const migration023 = sqlByFile.get(files.find((file) => file.startsWith("023_")));
 const migration024 = sqlByFile.get(files.find((file) => file.startsWith("024_")));
 const migration025 = sqlByFile.get(files.find((file) => file.startsWith("025_")));
+const migration026 = sqlByFile.get(files.find((file) => file.startsWith("026_")));
+const migration027 = sqlByFile.get(files.find((file) => file.startsWith("027_")));
 
 for (const pattern of [
   /events_active_team_same_event_fk/,
@@ -156,5 +158,24 @@ for (const pattern of [
   /SCORING_POLICY_APPROVE/i,
   /grant execute on function public\.approve_scoring_policy\(uuid, uuid\) to authenticated/i,
 ]) assert(pattern.test(migration025), `025 missing scoring-policy governance guard: ${pattern}`);
+
+for (const pattern of [
+  /delete from public\.participants/i,
+  /affiliation = 'REHEARSAL'/i,
+  /participant_code ~ '\^TEST-\[0-9\]\{3\}\$'/i,
+  /display_label = 'Participant ' \|\| participant_code/i,
+  /REHEARSAL_PARTICIPANT_CLEANUP_INCOMPLETE/i,
+]) assert(pattern.test(migration026), `026 missing production-baseline cleanup guard: ${pattern}`);
+
+for (const pattern of [
+  /pcu_code between 'PCU-001' and 'PCU-020'/i,
+  /pcu_code between 'PCU-101' and 'PCU-120'/i,
+  /'IT경영정보학과', 21, 40/i,
+  /'호텔항공경영학과', 101, 120/i,
+  /pg_advisory_xact_lock/i,
+  /DEPARTMENT_CAPACITY_REACHED/i,
+  /pcu_code = 'PCU-' \|\| lpad/i,
+  /grant execute on function public\.register_audience_jury\(uuid, text, text, text, text\) to service_role/i,
+]) assert(pattern.test(migration027), `027 missing contiguous audience-jury code guard: ${pattern}`);
 
 console.log(`Migration static validation passed (${files.length} files: ${files[0]} … ${files.at(-1)}).`);

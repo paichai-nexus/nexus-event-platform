@@ -8,6 +8,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useEventOps } from "@/features/event/context/EventOpsProvider";
+import { EVENT_EXTERNAL_FORMS } from "@/features/event/data/externalForms";
 import { parseAudienceReservationRows, parseAudienceReservationText, type AudienceReservationImportRow } from "@/lib/audience-jury/parseAudienceReservationCsv";
 import { AUDIENCE_JURY_DEPARTMENTS, AUDIENCE_JURY_PCU_RANGES, type AudienceJuryDepartment } from "@/types/audience-jury";
 import type { AudienceReservation, AudienceReservationSummary } from "@/types/audience-reservation";
@@ -98,6 +99,7 @@ export default function AudienceReservationsPage() {
   return <div className="admin-page audience-admin">
     <SectionLabel label="AUDIENCE JURY" title="예약·서명·청중평가단 관리" description="Google Form 예약 명단을 불러오고 종이 서명, 현장 QR 인증, 학과별 PCU 발급 상태를 관리합니다." />
     <OperationAlert level="WARNING">현재 리허설용 Mock 저장소입니다. Excel 원본은 CSV UTF-8로 저장해 불러오며, 서버 재시작 시 데이터가 초기화될 수 있습니다.</OperationAlert>
+    <OperationAlert level="INFO">Google Form 응답은 자동 동기화되지 않습니다. 응답을 XLSX/CSV로 내려받아 아래에서 가져온 뒤 종이 서명과 현장 인증을 확인하세요.</OperationAlert>
     <section className="stat-grid stat-grid--4 audience-admin__stats">
       <StatCard label="예약 명단" value={data.summary.total} detail="명" icon="☷" />
       <StatCard label="종이 서명" value={data.summary.signed} detail="명" icon="✓" progress={data.summary.total ? data.summary.signed / data.summary.total * 100 : 0} />
@@ -108,6 +110,7 @@ export default function AudienceReservationsPage() {
       <section className="admin-card audience-import-card">
         <PanelHeader label="ROSTER IMPORT" title="예약자 명단 가져오기" />
         <p>Excel 첫 행의 열 제목은 <b>학과, 학번, 이름</b>을 사용합니다. 기존 학번은 중복 등록되지 않습니다.</p>
+        <a className="admin-button" href={EVENT_EXTERNAL_FORMS.audienceJuryReservation.url} target="_blank" rel="noreferrer">청중평가단 예약 폼 열기 ↗</a>
         <label className={`admin-button admin-button--primary audience-file-button ${busy ? "is-disabled" : ""}`}>
           XLSX / CSV 파일 선택<input type="file" accept=".xlsx,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values" onChange={uploadCsv} disabled={busy} />
         </label>

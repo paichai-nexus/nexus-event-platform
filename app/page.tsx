@@ -1,22 +1,27 @@
 import { AwardsSection } from "@/features/landing/components/AwardsSection";
 import { AudienceVoteSection } from "@/features/landing/components/AudienceVoteSection";
 import { Countdown } from "@/features/landing/components/Countdown";
-import { EventInfo } from "@/features/landing/components/EventInfo";
 import { FinalistSection } from "@/features/landing/components/FinalistSection";
 import { Footer } from "@/features/landing/components/Footer";
 import { Header } from "@/features/landing/components/Header";
 import { HeroSection } from "@/features/landing/components/HeroSection";
-import { PartnersSection } from "@/features/landing/components/PartnersSection";
 import { ProgramSection } from "@/features/landing/components/ProgramSection";
-import { ProjectTeamSection } from "@/features/landing/components/ProjectTeamSection";
 import { QuickActions } from "@/features/landing/components/QuickActions";
 import { ScrollToTop } from "@/features/landing/components/ScrollToTop";
-import { ShareSection } from "@/features/landing/components/ShareSection";
 import { PromoVideoSection } from "@/features/landing/components/PromoVideoSection";
 import { getPromoVideoRepository } from "@/lib/repositories/repositoryFactory";
 
+const DEFAULT_PROMO_VIDEO = {
+  id: "academic-festival-promo-2026",
+  videoUrl: "/media/academic-festival-promo.mp4",
+  thumbnailUrl: "/media/academic-festival-promo-poster.jpg",
+  title: "제24회 경영대학 학술제 홍보 영상",
+  active: true,
+} as const;
+
 export default async function Home() {
-  const promoVideo = await getPromoVideoRepository().get().catch(() => null);
+  const savedPromoVideo = await getPromoVideoRepository().get().catch(() => null);
+  const promoVideo = savedPromoVideo?.active ? savedPromoVideo : DEFAULT_PROMO_VIDEO;
   return (
     <>
       <Header />
@@ -24,15 +29,11 @@ export default async function Home() {
         <HeroSection />
         <Countdown />
         <QuickActions />
-        <EventInfo />
+        <PromoVideoSection video={promoVideo} />
         <ProgramSection />
         <FinalistSection />
         <AudienceVoteSection />
-        <PromoVideoSection video={promoVideo} />
         <AwardsSection />
-        <PartnersSection />
-        <ProjectTeamSection />
-        <ShareSection />
       </main>
       <Footer />
       <ScrollToTop />

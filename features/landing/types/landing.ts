@@ -12,7 +12,13 @@ export type Finalist = {
   id: string;
   name: string;
   category: Exclude<FinalistCategory, "전체">;
+  department: string;
   description: string;
+  members: string[];
+  advisors: string[];
+  coverImage: string;
+  materialUrl: string;
+  materialFormat: "PDF" | "PPTX";
   isPlaceholder: boolean;
 };
 

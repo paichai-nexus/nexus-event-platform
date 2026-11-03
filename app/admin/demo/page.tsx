@@ -3,21 +3,18 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 const DEMO_TEAMS = [
-  { id: "TEAM-01", name: "EVER OASIS", department: "항공서비스학과", category: "STARTUP", target: 28 },
-  { id: "TEAM-02", name: "밋턴", department: "경영학과", category: "STARTUP", target: 26 },
-  { id: "TEAM-03", name: "시너지", department: "IT경영정보학과", category: "BUSINESS_ANALYSIS", target: 24 },
-  { id: "TEAM-04", name: "밸류루트", department: "경영학과", category: "STARTUP", target: 22 },
-  { id: "TEAM-05", name: "TEAM:HOTEL", department: "호텔항공경영학과", category: "STARTUP", target: 20 },
-  { id: "TEAM-06", name: "관광ON", department: "관광경영학과", category: "STARTUP", target: 18 },
-  { id: "TEAM-07", name: "가치로", department: "글로벌비즈니스학과", category: "BUSINESS_ANALYSIS", target: 16 },
-  { id: "TEAM-08", name: "TOUCHPOINT", department: "항공서비스학과", category: "BUSINESS_ANALYSIS", target: 16 },
-  { id: "TEAM-09", name: "타겟", department: "IT경영정보학과", category: "STARTUP", target: 14 },
-  { id: "TEAM-10", name: "어프로치", department: "호텔항공경영학과", category: "BUSINESS_ANALYSIS", target: 12 },
-  { id: "TEAM-11", name: "분석할계룡", department: "경영학과", category: "BUSINESS_ANALYSIS", target: 10 },
-  { id: "TEAM-12", name: "김성근", department: "글로벌비즈니스학과", category: "STARTUP", target: 10 },
-  { id: "TEAM-13", name: "이면", department: "IT경영정보학과", category: "BUSINESS_ANALYSIS", target: 8 },
-  { id: "TEAM-14", name: "이어봄", department: "경영학과", category: "STARTUP", target: 8 },
-  { id: "TEAM-15", name: "조선제일주", department: "경영학과", category: "BUSINESS_ANALYSIS", target: 8 },
+  { id: "S04", name: "EVER OASIS", department: "항공서비스학과", category: "STARTUP", target: 28 },
+  { id: "S03", name: "연애하자", department: "경영학과", category: "STARTUP", target: 26 },
+  { id: "B05", name: "시너지", department: "IT경영정보학과", category: "BUSINESS_ANALYSIS", target: 24 },
+  { id: "S02", name: "TEA:MATE", department: "호텔항공경영학과", category: "STARTUP", target: 23 },
+  { id: "S01", name: "관광ON", department: "관광경영학과", category: "STARTUP", target: 22 },
+  { id: "B01", name: "가치로", department: "글로벌비즈니스학과", category: "BUSINESS_ANALYSIS", target: 21 },
+  { id: "B06", name: "TOUCHPOINT", department: "항공서비스학과", category: "BUSINESS_ANALYSIS", target: 20 },
+  { id: "S05", name: "타겟", department: "IT경영정보학과", category: "STARTUP", target: 19 },
+  { id: "B03", name: "어프로치", department: "호텔항공경영학과", category: "BUSINESS_ANALYSIS", target: 18 },
+  { id: "B04", name: "분석할계룡", department: "경영학과", category: "BUSINESS_ANALYSIS", target: 15 },
+  { id: "S06", name: "김성근", department: "글로벌비즈니스학과", category: "STARTUP", target: 13 },
+  { id: "B02", name: "조선제일주", department: "경영학과", category: "BUSINESS_ANALYSIS", target: 11 },
 ] as const;
 
 const VOTE_SEQUENCE = Array.from({ length: Math.max(...DEMO_TEAMS.map((team) => team.target)) }, (_, round) =>
@@ -27,7 +24,7 @@ const VOTE_SEQUENCE = Array.from({ length: Math.max(...DEMO_TEAMS.map((team) => 
 const DEFAULT_JUDGE_SCORES = [
   [174, 180, 177], [185, 182, 179], [168, 172, 170], [176, 173, 178], [171, 169, 175],
   [166, 171, 168], [181, 176, 179], [173, 175, 172], [165, 168, 170], [178, 174, 176],
-  [169, 167, 171], [175, 177, 173], [164, 166, 168], [172, 170, 174], [167, 169, 165],
+  [169, 167, 171], [175, 177, 173],
 ];
 
 const DEPARTMENT_COLORS: Record<string, string> = {
@@ -97,8 +94,27 @@ export default function RapidDemoCountdownPage() {
     setJudgeCompleted(0);
     setVotes(DEMO_TEAMS.map(() => 0));
     setCheerDepartmentIndex(0);
-    setRunId((current) => (current ?? 0) + 1);
+    // Always use a fresh token so rapid/repeated rehearsal clicks restart the
+    // timer effect reliably, even after Fast Refresh or a previously stopped run.
+    setRunId(Date.now());
   };
+
+  useEffect(() => {
+    if (phase !== "ENTRY" || runId !== null) return;
+    const shouldAutostart = new URLSearchParams(window.location.search).get("autostart") === "1";
+    if (!shouldAutostart) return;
+    const autostartTimer = window.setTimeout(() => {
+      setEntryOpen(false);
+      setCountdown(3);
+      setPhase("COUNTDOWN");
+      setSubmitted(0);
+      setJudgeCompleted(0);
+      setVotes(DEMO_TEAMS.map(() => 0));
+      setCheerDepartmentIndex(0);
+      setRunId(Date.now());
+    }, 0);
+    return () => window.clearTimeout(autostartTimer);
+  }, [phase, runId]);
 
   const updateJudgeScore = (teamIndex: number, judgeIndex: number, value: string) => {
     const parsed = Number(value);
@@ -115,7 +131,13 @@ export default function RapidDemoCountdownPage() {
     }
     setEntryError("");
     setEntryOpen(false);
-    replay();
+    setCountdown(3);
+    setPhase("COUNTDOWN");
+    setSubmitted(0);
+    setJudgeCompleted(0);
+    setVotes(DEMO_TEAMS.map(() => 0));
+    setCheerDepartmentIndex(0);
+    setRunId(Date.now());
   };
 
   return (

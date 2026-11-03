@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { FINALISTS } from "@/features/landing/data/eventData";
 import type { FinalistCategory } from "@/features/landing/types/landing";
@@ -27,11 +28,19 @@ export function FinalistSection() {
           {finalists.map((team) => (
             <article key={team.id} className="finalist-card">
               <span className="finalist-card__number">{team.id}</span>
-              <div className="finalist-card__avatar" aria-hidden="true">N</div>
-              <div className="finalist-card__copy">
-                <strong>{team.name}</strong><small>{team.category}</small><p>{team.description}</p>
+              <div className="finalist-card__cover">
+                <Image src={team.coverImage} alt={`${team.name} 발표자료 표지`} fill sizes="(min-width: 960px) 220px, 38vw" />
               </div>
-              <span className="finalist-card__status">준비 중</span>
+              <div className="finalist-card__copy">
+                <strong>{team.name}</strong>
+                <small>{team.department} · {team.category}</small>
+                <p>{team.description}</p>
+                {team.members.length > 0 && <span>팀원 {team.members.join(", ")}</span>}
+                {team.advisors.length > 0 && <span>지도교수 {team.advisors.map((name) => `${name} 교수님`).join(", ")}</span>}
+              </div>
+              <a className="finalist-card__material" href={team.materialUrl} target="_blank" rel="noreferrer">
+                발표자료 {team.materialFormat === "PDF" ? "열기" : "다운로드"} <b>{team.materialFormat}</b>
+              </a>
             </article>
           ))}
         </div>

@@ -6,6 +6,7 @@ const eventId = "00000000-0000-4000-8000-000000000100";
 const teamId = "TEAM-01";
 const departments = ["경영학과", "IT경영정보학과", "호텔항공경영학과", "관광경영학과", "항공서비스학과", "글로벌비즈니스학과"];
 const concurrency = Number.parseInt(process.env.REHEARSAL_CONCURRENCY ?? "20", 10);
+const keepDemoState = process.env.KEEP_REHEARSAL_STATE === "true";
 if (process.env.ALLOW_REHEARSAL_LOAD_TEST !== "true") throw new Error("BLOCKED: set ALLOW_REHEARSAL_LOAD_TEST=true for an explicit Mock rehearsal only.");
 if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 50) throw new Error("REHEARSAL_CONCURRENCY must be between 1 and 50.");
 
@@ -29,6 +30,12 @@ assert.equal(health.body?.status, "EXPLICIT_MOCK", "Mock runtime must be explici
 await control({ action: "RESET_REHEARSAL" });
 try {
   const reservations = departments.flatMap((department, departmentIndex) => Array.from({ length: 20 }, (_, index) => ({ department, name: "테스트학생", studentNumber: `${2026 + departmentIndex}${String(index + 1).padStart(4, "0")}` })));
+  const entryQr = await ok("/api/attendance/entry-qr");
+  await batches(reservations, async () => {
+    const response = await fetch(entryQr.body.data.entryUrl, { redirect: "manual" });
+    assert.equal(response.status, 303, "QR entry must redirect to the attendance result page");
+    return response;
+  });
   const imported = await ok("/api/audience-reservations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ eventId, rows: reservations }) });
   const reservationIds = new Map(imported.body.data.rows.map((row) => [row.studentNumber, row.id]));
   await batches(reservations, (reservation) => ok("/api/audience-reservations", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ eventId, id: reservationIds.get(reservation.studentNumber), paperSigned: true }) }));
@@ -61,9 +68,15 @@ try {
   }
 
   const snapshot = await ok("/api/event/snapshot");
+  assert.equal(snapshot.body.data.checkInCount, 120, "admin snapshot must show exactly 120 QR check-ins");
   assert.equal(snapshot.body.data.voteCount, 120, "admin snapshot must show exactly 120 unique votes");
   assert.equal(snapshot.body.data.judgeProgress.filter((judge) => judge.completed === 1).length, 3, "all three judges must be submitted");
-  console.log(JSON.stringify({ status: "PASS", runtime: "mock", audience: 120, departments: 6, perDepartment: 20, uniqueVotes: snapshot.body.data.voteCount, duplicateClickStoredOnce: true, judgesSubmitted: 3, latencyMs: { p50: Math.round(percentile(voteDurations, .5)), p95: Math.round(percentile(voteDurations, .95)), max: Math.round(Math.max(...voteDurations)) } }, null, 2));
+  console.log(JSON.stringify({ status: "PASS", runtime: "mock", audience: 120, departments: 6, perDepartment: 20, qrCheckIns: snapshot.body.data.checkInCount, uniqueVotes: snapshot.body.data.voteCount, duplicateClickStoredOnce: true, judgesSubmitted: 3, latencyMs: { p50: Math.round(percentile(voteDurations, .5)), p95: Math.round(percentile(voteDurations, .95)), max: Math.round(Math.max(...voteDurations)) } }, null, 2));
 } finally {
-  await control({ action: "RESET_REHEARSAL" });
+  if (!keepDemoState) await control({ action: "RESET_REHEARSAL" });
+}
+
+if (keepDemoState) {
+  const preserved = await ok("/api/event/snapshot");
+  console.log(`DEMO STATE PRESERVED: votes ${preserved.body.data.voteCount}, judges ${preserved.body.data.judgeProgress.filter((judge) => judge.completed === 1).length}/3`);
 }

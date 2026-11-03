@@ -671,6 +671,22 @@
 .entry-qr-panel > strong { display: block; color: #6cdba4; font-size: .75rem; }
 .entry-qr-panel > p { margin: 5px auto 7px; color: var(--muted); font-size: .58rem; line-height: 1.55; }
 .entry-qr-panel > button { width: 100%; }
+.external-form-qr-panel { text-align: center; }
+.external-form-qr-panel__image { display: block; width: min(100%, 300px); height: auto; margin: 4px auto 12px; padding: 8px; background: white; }
+.external-form-qr-panel__loading { display: grid; min-height: 240px; place-items: center; color: var(--muted); }
+.external-form-qr-panel > strong { display: block; color: #ffd06c; font-size: .75rem; }
+.external-form-qr-panel > p { margin: 6px auto 12px; color: var(--muted); font-size: .58rem; line-height: 1.6; }
+.external-form-qr-panel > a { width: 100%; }
+.part-qr-tabs { display: grid; margin: 0 0 12px; grid-template-columns: 1fr 1fr; gap: 6px; }
+.part-qr-tabs button { min-height: 42px; cursor: pointer; border: 1px solid var(--line); background: #07111d; color: var(--muted); font-weight: 900; }
+.part-qr-tabs button.is-active { border-color: var(--blue-bright); background: rgba(8,126,245,.18); color: white; }
+.part-attendance-form { max-width: 780px; margin: auto; }
+.part-attendance-success { display: grid; padding: 28px 20px; justify-items: center; text-align: center; gap: 9px; }
+.part-attendance-success > span { display: grid; width: 68px; height: 68px; border: 2px solid #43d99a; border-radius: 50%; color: #43d99a; font-size: 2rem; place-items: center; }
+.part-attendance-success > strong { font-size: 1.2rem; }
+.part-attendance-success > p { margin: 10px 0 0; color: var(--muted); }
+.part-attendance-success > b { padding: 10px 16px; border: 1px solid var(--blue-bright); color: var(--blue-bright); font-size: 1.25rem; letter-spacing: .08em; }
+.part-attendance-success > em { color: var(--muted); font-size: .7rem; font-style: normal; }
 .scanner-placeholder { min-height: 230px; border-style: solid; background: radial-gradient(circle, rgba(8,126,245,.09), transparent 45%), repeating-linear-gradient(45deg, rgba(8,126,245,.025) 0 10px, transparent 10px 20px); }
 .scan-frame { position: relative; display: grid; width: 112px; height: 112px; margin: auto; place-items: center; }
 .scan-frame i { position: absolute; width: 28px; height: 28px; border-color: var(--blue-bright); border-style: solid; }

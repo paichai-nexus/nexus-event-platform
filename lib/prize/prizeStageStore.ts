@@ -5,6 +5,7 @@ import { MockCheckInRepository } from "@/lib/repositories/mockCheckInRepository"
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { PrizeDrawStage, PrizeStageSnapshot } from "@/types/prize-stage";
 import { getMockAudienceJuryDrawPool } from "@/lib/audience-jury/mockAudienceJuryStore";
+import { getMockPartAttendanceDrawPool } from "@/lib/attendance/mockPartAttendanceStore";
 
 const labels: Record<PrizeDrawStage, string> = { SECOND: "2차 럭키드로우 · 4·3등", THIRD: "3차 럭키드로우 · 1등" };
 const mock = globalThis as typeof globalThis & { __prizeStageSnapshots?: Map<PrizeDrawStage, PrizeStageSnapshot>; __prizeStageMembers?: Map<PrizeDrawStage, Set<string>> };
@@ -26,7 +27,11 @@ export async function lockPrizeStage(eventId: string, stage: PrizeDrawStage): Pr
   if (isMockRuntime()) {
     const existing = mockStages().get(stage); if (existing) return structuredClone(existing);
     const snapshot = await new MockCheckInRepository().getSnapshot();
-    const members = new Set([...snapshot.checkIns.map((item) => item.participantId), ...getMockAudienceJuryDrawPool(eventId).map((item) => item.participantCode)]);
+    const members = new Set([
+      ...snapshot.checkIns.map((item) => item.participantId),
+      ...getMockAudienceJuryDrawPool(eventId).map((item) => item.participantCode),
+      ...getMockPartAttendanceDrawPool(eventId),
+    ]);
     if (!members.size) throw new DomainError("INVALID_STATE", "현재 체크인된 참가자가 없어 대상자를 봉인할 수 없습니다.", 409);
     const saved = { stage, label: labels[stage], eligibleCount: members.size, lockedAt: new Date().toISOString(), locked: true } satisfies PrizeStageSnapshot;
     mockMembers().set(stage, members);

@@ -75,7 +75,7 @@ select * from public.register_audience_jury(
 reset role;
 
 select pg_temp.assert_true(
-  (select pcu_code = 'PCU101' and paper_signed_at is not null and qr_checked_in_at is not null
+  (select pcu_code = 'PCU-101' and paper_signed_at is not null and qr_checked_in_at is not null
    from public.audience_jury_reservations
    where event_id = '00000000-0000-4000-8000-000000000100' and student_number = '20260001'),
   'signed attendee must receive first department PCU code'
@@ -93,7 +93,7 @@ declare blocked boolean := false;
 begin
   begin
     perform public.authenticate_audience_jury(
-      '00000000-0000-4000-8000-000000000100', '김학생', '20260001', 'PCU101',
+      '00000000-0000-4000-8000-000000000100', '김학생', '20260001', 'PCU-101',
       'jury-auth-token-0000000000000001'
     );
   exception when insufficient_privilege then blocked := true; end;
@@ -104,7 +104,7 @@ reset role;
 
 set local role service_role;
 select public.authenticate_audience_jury(
-  '00000000-0000-4000-8000-000000000100', '김학생', '20260001', 'PCU101',
+  '00000000-0000-4000-8000-000000000100', '김학생', '20260001', 'PCU-101',
   'jury-auth-token-0000000000000001'
 );
 update public.teams

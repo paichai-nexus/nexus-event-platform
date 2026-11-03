@@ -144,6 +144,54 @@ $$;
 revoke all on function public.submit_part_attendance(uuid, smallint, text, text, text) from public;
 grant execute on function public.submit_part_attendance(uuid, smallint, text, text, text) to anon, authenticated;
 
+create or replace function public.get_audience_jury_state(p_event_id uuid, p_session_token text)
+returns table (registration jsonb, departments jsonb, total_accepted integer, total_capacity integer)
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  selected_event_id uuid;
+  token_hash text;
+begin
+  if length(coalesce(p_session_token, '')) < 16 then raise exception 'INVALID_SESSION'; end if;
+  selected_event_id := public.resolve_attendance_event(p_event_id);
+  if selected_event_id is null then raise exception 'EVENT_NOT_FOUND'; end if;
+  token_hash := encode(digest(p_session_token, 'sha256'), 'hex');
+
+  return query
+  with department_ranges(department, range_start, range_end) as (values
+    ('경영학과', 101, 120), ('IT경영정보학과', 121, 140),
+    ('관광경영학과', 141, 160), ('항공서비스학과', 161, 180),
+    ('글로벌비즈니스학과', 181, 200), ('호텔항공경영학과', 201, 220)
+  ), accepted as (
+    select reservation.department, count(*)::integer as count
+    from public.audience_jury_reservations reservation
+    where reservation.event_id = selected_event_id and reservation.pcu_code is not null
+    group by reservation.department
+  ), own_registration as (
+    select reservation.*,
+      row_number() over (partition by reservation.department order by reservation.qr_checked_in_at, reservation.id)::integer as position
+    from public.audience_jury_reservations reservation
+    where reservation.event_id = selected_event_id and reservation.pcu_code is not null
+  )
+  select
+    (select jsonb_build_object(
+      'department', own.department, 'name', own.attendee_name,
+      'studentNumber', own.student_number, 'serialNumber', own.pcu_code,
+      'position', own.position, 'capacity', 20, 'acceptedAt', own.qr_checked_in_at
+    ) from own_registration own where own.session_token_hash = token_hash limit 1),
+    (select jsonb_agg(jsonb_build_object(
+      'department', range.department, 'accepted', coalesce(accepted.count, 0),
+      'remaining', 20 - coalesce(accepted.count, 0), 'capacity', 20,
+      'pcuStart', 'PCU-' || lpad(range.range_start::text, 3, '0'),
+      'pcuEnd', 'PCU-' || lpad(range.range_end::text, 3, '0')
+    ) order by range.range_start) from department_ranges range left join accepted using (department)),
+    (select count(*)::integer from public.audience_jury_reservations reservation
+      where reservation.event_id = selected_event_id and reservation.pcu_code is not null),
+    120;
+end;
+$$;
+revoke all on function public.get_audience_jury_state(uuid, text) from public, anon, authenticated;
+grant execute on function public.get_audience_jury_state(uuid, text) to service_role;
+
 -- A PCU code may already have been issued by first-part attendance. Entering
 -- the same identity on /vote binds that existing code to the current browser.
 create or replace function public.register_audience_jury(

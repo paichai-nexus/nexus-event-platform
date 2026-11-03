@@ -21,9 +21,10 @@ describe("evaluation guide integrity", () => {
   });
 
   it("keeps the confirmed audience vote, draw, result reveal, and ceremony order", () => {
-    expect(CEREMONY_RUN_OF_SHOW.map((item) => item.order)).toEqual([12, 14, 15, 16]);
-    expect(CEREMONY_RUN_OF_SHOW[0].detail).toContain("1위 후보 2팀");
-    expect(CEREMONY_RUN_OF_SHOW[1].detail).toContain("4등·3등");
-    expect(CEREMONY_RUN_OF_SHOW[3].detail).toContain("3차 럭키드로우(1등)");
+    expect(CEREMONY_RUN_OF_SHOW.map((item) => item.order)).toEqual([11, 12, 14, 15, 16]);
+    expect(CEREMONY_RUN_OF_SHOW[0].detail).toContain("커피 쿠폰 15명");
+    expect(CEREMONY_RUN_OF_SHOW[1].detail).toContain("1위 후보 2팀");
+    expect(CEREMONY_RUN_OF_SHOW[2].detail).toContain("올리브영 2만원 6명");
+    expect(CEREMONY_RUN_OF_SHOW[4].detail).toContain("에어팟 1명");
   });
 });

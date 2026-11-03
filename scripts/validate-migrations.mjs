@@ -3,14 +3,14 @@ import { resolve } from "node:path";
 
 const migrationDirectory = resolve("supabase/migrations");
 const files = (await readdir(migrationDirectory)).filter((file) => file.endsWith(".sql")).sort();
-const expected = Array.from({ length: 27 }, (_, index) => String(index + 1).padStart(3, "0"));
+const expected = Array.from({ length: 30 }, (_, index) => String(index + 1).padStart(3, "0"));
 const actual = files.map((file) => file.slice(0, 3));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-027. Received: ${actual.join(", ")}`);
+assert(JSON.stringify(actual) === JSON.stringify(expected), `Migration sequence must be 001-030. Received: ${actual.join(", ")}`);
 
 const sqlByFile = new Map(await Promise.all(files.map(async (file) => [file, await readFile(resolve(migrationDirectory, file), "utf8")])));
 const allSql = [...sqlByFile.values()].join("\n");
@@ -32,6 +32,9 @@ const migration024 = sqlByFile.get(files.find((file) => file.startsWith("024_"))
 const migration025 = sqlByFile.get(files.find((file) => file.startsWith("025_")));
 const migration026 = sqlByFile.get(files.find((file) => file.startsWith("026_")));
 const migration027 = sqlByFile.get(files.find((file) => file.startsWith("027_")));
+const migration028 = sqlByFile.get(files.find((file) => file.startsWith("028_")));
+const migration029 = sqlByFile.get(files.find((file) => file.startsWith("029_")));
+const migration030 = sqlByFile.get(files.find((file) => file.startsWith("030_")));
 
 for (const pattern of [
   /events_active_team_same_event_fk/,
@@ -177,5 +180,30 @@ for (const pattern of [
   /pcu_code = 'PCU-' \|\| lpad/i,
   /grant execute on function public\.register_audience_jury\(uuid, text, text, text, text\) to service_role/i,
 ]) assert(pattern.test(migration027), `027 missing contiguous audience-jury code guard: ${pattern}`);
+
+for (const pattern of [
+  /alter type public\.prize_draw_stage add value if not exists 'FIRST' before 'SECOND'/i,
+]) assert(pattern.test(migration028), `028 missing first-stage enum guard: ${pattern}`);
+
+for (const pattern of [
+  /create table public\.part_attendance_entries/i,
+  /unique \(event_id, student_number, part\)/i,
+  /ATTENDANCE_IDENTITY_MISMATCH/i,
+  /pg_advisory_xact_lock/i,
+  /grant execute on function public\.submit_part_attendance.*to anon, authenticated/i,
+  /selected_part := case when p_stage = 'FIRST' then 1 else 2 end/i,
+  /selected_prize\.award_only or selected_prize\.draw_stage is distinct from p_stage/i,
+  /PRIZE_STAGE_MISMATCH/i,
+  /'FIRST_DRAW','AUDIENCE_CANDIDATES','SECOND_DRAW'/i,
+]) assert(pattern.test(migration029), `029 missing attendance/prize run-of-show guard: ${pattern}`);
+
+for (const pattern of [
+  /create or replace function public\.get_prize_draw_results/i,
+  /current_app_role\(\) in \('ADMIN', 'STAFF'\)/i,
+  /part_attendance_entries/i,
+  /masked_student_number/i,
+  /masked_name/i,
+  /revoke all on function public\.get_prize_draw_results\(uuid\) from public/i,
+]) assert(pattern.test(migration030), `030 missing masked prize-result guard: ${pattern}`);
 
 console.log(`Migration static validation passed (${files.length} files: ${files[0]} … ${files.at(-1)}).`);

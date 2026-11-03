@@ -5,7 +5,7 @@ import { toErrorResponse } from "@/lib/errors/domainError";
 import { drawMockPrizeItem, drawSupabasePrizeItem, getMockPrizeInventory, getSupabasePrizeInventory } from "@/lib/prize/prizeInventoryStore";
 
 const eventIdSchema = z.string().uuid();
-const drawSchema = z.object({ eventId: eventIdSchema, prizeItemId: z.string().min(1), stage: z.enum(["SECOND", "THIRD"]) });
+const drawSchema = z.object({ eventId: eventIdSchema, prizeItemId: z.string().min(1), stage: z.enum(["FIRST", "SECOND", "THIRD"]) });
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {

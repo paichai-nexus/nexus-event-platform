@@ -68,12 +68,19 @@ export function getMockPartAttendanceSnapshot(eventId = DEFAULT_EVENT_ID): PartA
   };
 }
 
-export function getMockPartAttendanceDrawPool(eventId = DEFAULT_EVENT_ID) {
+export function getMockPartAttendancePool(eventId = DEFAULT_EVENT_ID, part: EventPart) {
   const rows = records().filter((row) => row.eventId === eventId);
-  const partOne = new Map(rows.filter((row) => row.part === 1).map((row) => [row.studentNumber, row]));
-  const partTwoStudents = new Set(rows.filter((row) => row.part === 2).map((row) => row.studentNumber));
-  return [...partOne.values()]
-    .filter((row) => partTwoStudents.has(row.studentNumber))
+  return [...new Map(rows.filter((row) => row.part === part).map((row) => [row.studentNumber, row])).values()]
     .map((row) => row.participantCode)
     .sort();
+}
+
+export function getMockPartAttendanceIdentity(eventId: string, participantCodeValue: string) {
+  const row = records().find((candidate) => candidate.eventId === eventId && candidate.participantCode === participantCodeValue);
+  return row ? structuredClone(row) : null;
+}
+
+export function getMockPartAttendanceDrawPool(eventId = DEFAULT_EVENT_ID) {
+  const partOne = new Set(getMockPartAttendancePool(eventId, 1));
+  return getMockPartAttendancePool(eventId, 2).filter((code) => partOne.has(code));
 }

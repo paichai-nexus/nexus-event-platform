@@ -6,7 +6,7 @@ import { CEREMONY_PHASES, type CeremonyControlState, type CeremonyPhase } from "
 
 const state = globalThis as typeof globalThis & { __ceremonyControl?: Map<string, CeremonyControlState> };
 const mockStates = () => state.__ceremonyControl ??= new Map();
-const initial = (eventId: string): CeremonyControlState => ({ eventId, phase: "AUDIENCE_CANDIDATES", phaseIndex: 0, updatedAt: null });
+const initial = (eventId: string): CeremonyControlState => ({ eventId, phase: "FIRST_DRAW", phaseIndex: 0, updatedAt: null });
 const map = (row: Record<string, unknown>): CeremonyControlState => ({ eventId: String(row.event_id), phase: row.phase as CeremonyPhase, phaseIndex: CEREMONY_PHASES.indexOf(row.phase as CeremonyPhase), updatedAt: String(row.updated_at) });
 
 export async function getCeremonyControl(eventId: string) {

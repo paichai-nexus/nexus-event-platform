@@ -12,6 +12,8 @@ export type PrizeInventoryItem = {
   imageUrl: string | null;
   status: "UNCONFIRMED" | "CONFIRMED";
   drawStatus: "READY" | "IN_PROGRESS" | "COMPLETED";
+  drawStage: import("@/types/prize-stage").PrizeDrawStage | null;
+  awardOnly: boolean;
 };
 
 export type PrizeItemDraw = {
@@ -21,5 +23,8 @@ export type PrizeItemDraw = {
   pool: PrizeEligibilityPool;
   round: number;
   participantCode: string;
+  department: string;
+  maskedStudentNumber: string;
+  maskedName: string;
   drawnAt: string;
 };

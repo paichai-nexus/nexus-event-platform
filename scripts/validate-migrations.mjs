@@ -213,6 +213,9 @@ for (const pattern of [
   /grant select, update on public\.events to authenticated/i,
   /grant select, insert, update on public\.judge_submissions to authenticated/i,
   /grant select on public\.result_snapshots, public\.prize_draws, public\.audit_logs to authenticated/i,
+  /grant select, insert, update, delete on public\.prize_catalog to authenticated/i,
+  /grant select, insert, update, delete on public\.promo_videos to authenticated/i,
+  /grant select on public\.promo_videos to anon/i,
 ]) assert(pattern.test(migration031), `031 missing hosted Data API grant: ${pattern}`);
 
 console.log(`Migration static validation passed (${files.length} files: ${files[0]} … ${files.at(-1)}).`);

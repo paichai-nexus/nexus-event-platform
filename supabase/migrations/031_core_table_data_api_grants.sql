@@ -16,5 +16,10 @@ grant select, insert, update, delete on public.judge_assignments to authenticate
 grant select, insert, update on public.judge_submissions to authenticated;
 grant select, insert, update, delete on public.judge_scores to authenticated;
 grant select on public.result_snapshots, public.prize_draws, public.audit_logs to authenticated;
+grant select on public.audience_attendance_sessions, public.part_attendance_entries to authenticated;
+grant select, insert, update, delete on public.prize_catalog to authenticated;
+grant select, insert, update, delete on public.cheer_missions, public.mission_participations to authenticated;
+grant select, insert, update, delete on public.promo_videos to authenticated;
+grant select on public.promo_videos to anon;
 
 commit;

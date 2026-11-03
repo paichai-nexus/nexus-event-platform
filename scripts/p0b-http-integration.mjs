@@ -90,37 +90,26 @@ await json("/api/event/control", {
   body: JSON.stringify({ action: "SET_VOTING", eventId, status: "OPEN" }),
 });
 
+// Legacy vote submission was deliberately disabled when the PCU-ranked ballot
+// API was introduced. This job must not pretend the new ballot has been tested:
+// postgres-test does not yet implement /api/ranked-ballot persistence.
 for (const cookie of audienceCookies) {
   const state = await json(`/api/votes?eventId=${eventId}`, { headers: { cookie } });
   assert.equal(state.body.storage, "DATABASE");
-  assert.equal(state.body.data.eligible, true);
   assert.equal(state.body.data.votingStatus, "OPEN");
   assert.equal(state.body.data.teamId, activeTeam.id);
 }
 
-const voteOptions = (cookie) => ({
+const legacyVote = await json("/api/votes", {
   method: "POST",
-  headers: { cookie, origin: new URL(baseUrl).origin, "content-type": "application/json" },
+  headers: { cookie: audienceCookies[0], origin: new URL(baseUrl).origin, "content-type": "application/json" },
   body: JSON.stringify({ eventId }),
-});
-const concurrent = await Promise.all([
-  request("/api/votes", voteOptions(audienceCookies[0])),
-  request("/api/votes", voteOptions(audienceCookies[0])),
-]);
-const concurrentBodies = await Promise.all(concurrent.map((response) => response.clone().json().catch(() => null)));
-assert.deepEqual(concurrent.map((response) => response.status).sort(), [200, 200], `Concurrent duplicate vote must reconcile to the single stored row: ${JSON.stringify(concurrentBodies)}`);
-assert.equal(new Set(concurrentBodies.map((body) => body.data.submissionId)).size, 1, "Concurrent responses must identify the same stored submission.");
-for (const cookie of audienceCookies.slice(1)) {
-  await json("/api/votes", voteOptions(cookie));
-}
-const duplicate = await json("/api/votes", voteOptions(audienceCookies[0]));
-assert.equal(duplicate.body.data.submissionId, concurrentBodies[0].data.submissionId);
+}, 403);
+assert.equal(legacyVote.body.error.code, "FORBIDDEN");
 
 const afterVotes = await json(`/api/event/snapshot?eventId=${eventId}`, { headers: actorHeaders(adminId) });
-assert.equal(afterVotes.body.data.voteCount, 12);
-const voteTeam = afterVotes.body.data.voteByTeam.find((team) => team.teamId === activeTeam.id);
-assert.equal(voteTeam.voteCount, 12);
-assert.equal(voteTeam.eligibilityCount, 12);
+assert.equal(afterVotes.body.data.voteCount, 0, "Deprecated endpoint must not create votes.");
+assert.equal(afterVotes.body.data.voteByTeam.every((team) => team.voteCount === 0), true);
 
 const publicSnapshot = await json(`/api/event/public-snapshot?eventId=${eventId}`);
 assert.equal(publicSnapshot.body.data.version, afterVotes.body.data.version);
@@ -183,8 +172,8 @@ const finalAdmin = await json(`/api/event/snapshot?eventId=${eventId}`, { header
 const finalPublic = await json(`/api/event/public-snapshot?eventId=${eventId}`);
 assert.equal(finalAdmin.body.runtimeMode, "postgres-test");
 assert.equal(finalAdmin.body.data.checkInCount, 12);
-assert.equal(finalAdmin.body.data.voteCount, 12);
+assert.equal(finalAdmin.body.data.voteCount, 0);
 assert.equal(finalPublic.body.data.version, finalAdmin.body.data.version);
 assert.equal(finalPublic.body.data.activeTeam.id, finalAdmin.body.data.activeTeamId);
 
-console.log("PASS: P0-B HTTP integration completed for 12 audience members and 3 judges.");
+console.log("PASS: P0-B attendance, legacy-vote rejection, and judging for 12 audience members and 3 judges. PCU ranked ballots are NOT covered.");

@@ -1,5 +1,34 @@
 begin;
 
+-- The event-day paper serials use PCU-101 through PCU-220. Do not silently
+-- rewrite previously issued identifiers: a populated installation requires a
+-- separately reviewed, audited remapping before this migration can proceed.
+do $$
+begin
+  if exists (
+    select 1 from public.audience_jury_reservations where pcu_code is not null
+  ) then
+    raise exception 'PCU_CODE_RANGE_MIGRATION_REVIEW_REQUIRED';
+  end if;
+end;
+$$;
+
+alter table public.audience_jury_reservations
+  drop constraint audience_jury_pcu_check;
+
+alter table public.audience_jury_reservations
+  add constraint audience_jury_pcu_check check (
+    pcu_code is null or
+    (pcu_code ~ '^PCU-[0-9]{3}$' and (
+      (department = '경영학과' and pcu_code between 'PCU-101' and 'PCU-120') or
+      (department = 'IT경영정보학과' and pcu_code between 'PCU-121' and 'PCU-140') or
+      (department = '관광경영학과' and pcu_code between 'PCU-141' and 'PCU-160') or
+      (department = '항공서비스학과' and pcu_code between 'PCU-161' and 'PCU-180') or
+      (department = '글로벌비즈니스학과' and pcu_code between 'PCU-181' and 'PCU-200') or
+      (department = '호텔항공경영학과' and pcu_code between 'PCU-201' and 'PCU-220')
+    ))
+  );
+
 -- A first-part attendance submission is also the event-day walk-in queue for
 -- the audience jury. Department advisory locks make the 20-person limit and
 -- PCU allocation atomic even when many mobile requests arrive together.

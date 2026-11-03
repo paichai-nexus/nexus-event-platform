@@ -172,6 +172,12 @@ export class PostgresTestVoteRepository implements VoteRepository {
     if (!row) throw new DomainError("DATABASE_ERROR", "투표 상태를 확인하지 못했습니다.", 500);
     return row;
   }
+  async register(eventId: string | undefined, sessionToken: string) {
+    await runPostgresTestJson(postgresOneJson(`
+      select public.register_audience_voter(nullif(:'event_id', '')::uuid, :'session_token') as registered
+    `), { event_id: eventId ?? "", session_token: sessionToken }, { role: "service_role" });
+    return this.getState(eventId, sessionToken);
+  }
   async submit(eventId: string | undefined, sessionToken: string) {
     try {
       await runPostgresTestJson(postgresOneJson(`
@@ -180,7 +186,7 @@ export class PostgresTestVoteRepository implements VoteRepository {
     } catch (error) {
       const message = messageOf(error);
       if (message.includes("VOTING_CLOSED")) throw new DomainError("EVENT_CLOSED", "현재 투표가 열려 있지 않습니다.", 409);
-      if (message.includes("NOT_ELIGIBLE")) throw new DomainError("FORBIDDEN", "현장 입장을 완료한 참가자만 투표할 수 있습니다.", 403);
+      if (message.includes("NOT_ELIGIBLE")) throw new DomainError("FORBIDDEN", "청중평가단 신청을 완료한 참가자만 평가할 수 있습니다.", 403);
       if (message.includes("ALREADY_SUBMITTED")) {
         const state = await this.getState(eventId, sessionToken);
         if (state.submissionId) return state;

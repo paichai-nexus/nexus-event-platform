@@ -23,14 +23,14 @@ where id = '00000000-0000-4000-8000-000000000100';
 select set_config('request.jwt.claim.sub', '93000000-0000-4000-8000-000000000001', true);
 set local role authenticated;
 select * from public.record_paper_judge_score(
-  '00000000-0000-4000-8000-000000000100',
+  '00000000-0000-4000-8000-000000000100'::uuid,
   (select id from public.teams where event_id = '00000000-0000-4000-8000-000000000100' and presentation_order = 3),
-  1, 42, 88, 45, false
+  1::smallint, 42, 88, 45, false
 );
 select * from public.record_paper_judge_score(
-  '00000000-0000-4000-8000-000000000100',
+  '00000000-0000-4000-8000-000000000100'::uuid,
   (select id from public.teams where event_id = '00000000-0000-4000-8000-000000000100' and presentation_order = 3),
-  1, 44, 90, 46, true
+  1::smallint, 44, 90, 46, true
 );
 select pg_temp.assert_true(
   (select total_score = 180 and status = 'SUBMITTED' from public.paper_judge_scores
@@ -46,9 +46,9 @@ declare blocked boolean := false;
 begin
   begin
     perform public.record_paper_judge_score(
-      '00000000-0000-4000-8000-000000000100',
+      '00000000-0000-4000-8000-000000000100'::uuid,
       (select id from public.teams where event_id = '00000000-0000-4000-8000-000000000100' and presentation_order = 3),
-      1, 45, 90, 46, false
+      1::smallint, 45, 90, 46, false
     );
   exception when others then
     if position('PAPER_SUBMISSION_LOCKED' in sqlerrm) > 0 then blocked := true; else raise; end if;
@@ -65,9 +65,9 @@ declare blocked boolean := false;
 begin
   begin
     perform public.record_paper_judge_score(
-      '00000000-0000-4000-8000-000000000100',
+      '00000000-0000-4000-8000-000000000100'::uuid,
       (select id from public.teams where event_id = '00000000-0000-4000-8000-000000000100' and presentation_order = 3),
-      2, 40, 80, 40, false
+      2::smallint, 40, 80, 40, false
     );
   exception when others then
     if position('FORBIDDEN' in sqlerrm) > 0 then blocked := true; else raise; end if;

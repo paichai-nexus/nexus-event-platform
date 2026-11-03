@@ -82,10 +82,19 @@ end; $$;
 reset role;
 
 set local role anon;
-select pg_temp.assert_true(
-  (select count(*) = 0 from public.scoring_policy_versions),
-  'anonymous users must not read scoring governance records'
-);
+do $$
+declare blocked boolean := false;
+begin
+  begin
+    perform count(*) from public.scoring_policy_versions;
+  exception when insufficient_privilege then
+    blocked := true;
+  end;
+  if not blocked then
+    raise exception 'ASSERTION_FAILED: anonymous users must not read scoring governance records';
+  end if;
+end;
+$$;
 reset role;
 
 rollback;

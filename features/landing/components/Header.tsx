@@ -23,7 +23,7 @@ export function Header() {
           <span>경영대학 학술제</span>
         </Link>
         <div className="site-header__actions">
-          <Link className="header-admin" href="/login?next=/admin/dashboard" aria-label="운영진 로그인 및 관리자 페이지 열기">
+          <Link className="header-admin" href="/login?next=/admin" aria-label="운영진 로그인 및 관리자 페이지 열기">
             <span>운영진</span>
           </Link>
           <Link className="header-vote" href="/vote">청중평가</Link>

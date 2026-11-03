@@ -257,6 +257,22 @@ button { font: inherit; }
 .award-card b { margin-top: 5px; font-size: .8rem; }
 .award-card small { color: #263240; font-size: .68rem; }
 
+.landing-attendance { border-top: 1px solid var(--line); background: linear-gradient(145deg, #0b1c2d, #06111d); }
+.landing-attendance__layout { display: grid; align-items: center; gap: 30px; }
+.landing-attendance__qr { display: grid; min-height: 300px; padding: 18px; place-items: center; border: 1px solid rgba(21,148,255,.5); background: #fff; color: var(--ink); font-weight: 900; }
+.landing-attendance__qr img { display: block; width: min(100%, 420px); height: auto; }
+.landing-attendance__copy { display: grid; align-content: center; gap: 14px; }
+.landing-attendance__copy > small { color: var(--blue-bright); font-weight: 950; letter-spacing: .13em; }
+.landing-attendance__copy > strong { font-size: clamp(1.8rem, 5vw, 3.5rem); line-height: 1; }
+.landing-attendance__copy > strong b { color: var(--blue-bright); font-size: 1.25em; }
+.landing-attendance__copy p { margin: 0; color: #b8c4d1; font-size: 1rem; }
+.landing-attendance__copy .button { margin-top: 10px; }
+.dean-greeting { overflow: hidden; border-top: 1px solid rgba(255,255,255,.1); background: radial-gradient(circle at 80% 20%, rgba(21,148,255,.2), transparent 24rem), #07111d; }
+.dean-greeting__inner { min-height: 330px; display: grid; align-content: center; text-align: center; }
+.dean-greeting__inner small { color: var(--blue-bright); font-weight: 950; letter-spacing: .18em; }
+.dean-greeting__inner h2 { margin: 12px 0 8px; font-size: clamp(2.4rem, 7vw, 5.8rem); line-height: 1; letter-spacing: -.06em; }
+.dean-greeting__inner p { margin: 0; color: #b9c5d2; font-size: 1.05rem; }
+
 .partners { padding-top: 35px; }
 .partners-grid { display: grid; max-width: 540px; grid-template-columns: 1fr; gap: 9px; }
 .partners-grid article { display: grid; min-height: 145px; padding: 17px 12px; place-content: center; background: var(--paper); color: var(--ink); text-align: center; }
@@ -341,6 +357,7 @@ button { font: inherit; }
   .awards-grid { grid-template-columns: repeat(4, 1fr); }
   .award-card { min-height: 175px; flex-direction: column; justify-content: center; text-align: center; }
   .award-card > span { font-size: 2.8rem; }
+  .landing-attendance__layout { grid-template-columns: minmax(340px, .9fr) minmax(0, 1.1fr); gap: 70px; }
   .partners-grid article { min-height: 190px; }
   .partners-grid strong { font-size: 1.1rem; }
   .partners-grid small { font-size: .58rem; }

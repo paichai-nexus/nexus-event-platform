@@ -28,9 +28,9 @@ export const NAV_ITEMS = [
 ];
 
 export const PROGRAM_ITEMS: ProgramItem[] = [
-  { id: "01", time: "13:00 – 13:40", category: "지역 주요기업 설명회", title: "ICC호텔" },
+  { id: "01", time: "13:00 – 13:40", category: "지역 주요기업 설명회", title: "호텔ICC" },
   { id: "02", time: "13:50 – 14:30", category: "지역 주요기업 설명회", title: "계룡건설" },
-  { id: "03", time: "14:40 – 15:30", category: "CEO 특강", title: "조웅래 회장" },
+  { id: "03", time: "14:40 – 15:30", category: "CEO 특강", title: "선양 소주 조웅래 회장" },
   { id: "04", time: "15:40 – 16:40", title: "창업 부문 본선" },
   { id: "05", time: "16:50 – 17:20", title: "기업분석 부문 본선" },
   { id: "06", time: "17:20 – 17:30", title: "청중평가 집계" },

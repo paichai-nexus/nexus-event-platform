@@ -1,6 +1,7 @@
 import { AwardsSection } from "@/features/landing/components/AwardsSection";
 import { AudienceVoteSection } from "@/features/landing/components/AudienceVoteSection";
 import { Countdown } from "@/features/landing/components/Countdown";
+import { DeanGreetingSection } from "@/features/landing/components/DeanGreetingSection";
 import { FinalistSection } from "@/features/landing/components/FinalistSection";
 import { Footer } from "@/features/landing/components/Footer";
 import { Header } from "@/features/landing/components/Header";
@@ -9,6 +10,7 @@ import { ProgramSection } from "@/features/landing/components/ProgramSection";
 import { QuickActions } from "@/features/landing/components/QuickActions";
 import { ScrollToTop } from "@/features/landing/components/ScrollToTop";
 import { PromoVideoSection } from "@/features/landing/components/PromoVideoSection";
+import { PartOneAttendanceSection } from "@/features/landing/components/PartOneAttendanceSection";
 import { getPromoVideoRepository } from "@/lib/repositories/repositoryFactory";
 
 const DEFAULT_PROMO_VIDEO = {
@@ -34,6 +36,8 @@ export default async function Home() {
         <FinalistSection />
         <AudienceVoteSection />
         <AwardsSection />
+        <PartOneAttendanceSection />
+        <DeanGreetingSection />
       </main>
       <Footer />
       <ScrollToTop />

@@ -111,7 +111,7 @@ update public.teams
 set name = case presentation_order when 1 then 'TEST STARTUP 01' when 2 then 'TEST STARTUP 02' end
 where event_id = '00000000-0000-4000-8000-000000000100' and presentation_order in (1, 2);
 update public.events
-set voting_status = 'OPEN', active_team_id = (
+set voting_status = 'OPEN', active_vote_category = 'STARTUP', active_team_id = (
   select id from public.teams
   where event_id = '00000000-0000-4000-8000-000000000100' and presentation_order = 1
 )

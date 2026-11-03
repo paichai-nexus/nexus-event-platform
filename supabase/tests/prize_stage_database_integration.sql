@@ -17,15 +17,24 @@ insert into public.profiles (user_id, role, display_name, active) values
   ('93000000-0000-4000-8000-000000000002', 'JUDGE', 'Prize stage judge', true)
 on conflict (user_id) do update set role = excluded.role, active = excluded.active;
 
+-- Keep this snapshot test independent from rehearsal/upgrade fixtures. The
+-- production stage lock introduced in 029 is based on part-two attendance,
+-- not the legacy check-in table.
+delete from public.part_attendance_entries
+where event_id = '00000000-0000-4000-8000-000000000100';
+
 insert into public.participants (event_id, participant_code, display_label, affiliation)
 values ('00000000-0000-4000-8000-000000000100', 'STAGE-001', 'STAGE-001', 'GENERAL')
 on conflict (event_id, participant_code) do nothing;
-insert into public.check_ins (event_id, participant_id, source)
-select '00000000-0000-4000-8000-000000000100', participant.id, 'MANUAL'
+insert into public.part_attendance_entries (
+  event_id, participant_id, part, department, student_number, attendee_name
+)
+select '00000000-0000-4000-8000-000000000100', participant.id, 2,
+  '경영학과', 'STAGE-001', '스테이지일'
 from public.participants participant
 where participant.event_id = '00000000-0000-4000-8000-000000000100'
   and participant.participant_code = 'STAGE-001'
-on conflict (event_id, participant_id) do nothing;
+on conflict (event_id, student_number, part) do nothing;
 
 select set_config('request.jwt.claim.sub', '93000000-0000-4000-8000-000000000001', true);
 set local role authenticated;
@@ -43,12 +52,15 @@ select pg_temp.assert_true(
 insert into public.participants (event_id, participant_code, display_label, affiliation)
 values ('00000000-0000-4000-8000-000000000100', 'STAGE-002', 'STAGE-002', 'GENERAL')
 on conflict (event_id, participant_code) do nothing;
-insert into public.check_ins (event_id, participant_id, source)
-select '00000000-0000-4000-8000-000000000100', participant.id, 'MANUAL'
+insert into public.part_attendance_entries (
+  event_id, participant_id, part, department, student_number, attendee_name
+)
+select '00000000-0000-4000-8000-000000000100', participant.id, 2,
+  '경영학과', 'STAGE-002', '스테이지이'
 from public.participants participant
 where participant.event_id = '00000000-0000-4000-8000-000000000100'
   and participant.participant_code = 'STAGE-002'
-on conflict (event_id, participant_id) do nothing;
+on conflict (event_id, student_number, part) do nothing;
 
 select set_config('request.jwt.claim.sub', '93000000-0000-4000-8000-000000000001', true);
 set local role authenticated;

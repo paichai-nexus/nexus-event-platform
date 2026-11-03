@@ -6,8 +6,6 @@ import type { RuntimeMode } from "@/lib/config/runtimePolicy";
 
 const navigation = [
   ["▦", "Dashboard", "운영 현황", "/admin/dashboard"],
-  ["●", "행사 진행 콘솔", "12→14→15→16", "/admin/ceremony"],
-  ["✓", "행사 사전점검", "운영 차단요소 확인", "/admin/readiness"],
   ["⌁", "QR 입장", "참가자 체크인", "/admin/check-in"],
   ["☷", "예약 / 청중평가단", "서명·PCU 관리", "/admin/audience"],
   ["◫", "행사 / 팀 관리", "발표팀 현황", "/admin/teams"],
@@ -15,8 +13,6 @@ const navigation = [
   ["✎", "심사", "심사위원 제출", "/admin/judging"],
   ["▥", "점수 집계", "80/20 결과", "/admin/scoring"],
   ["✦", "경품 추첨", "당첨자 추첨", "/admin/prize"],
-  ["★", "응원 미션", "참여 승인·점수", "/admin/missions"],
-  ["▶", "홍보 콘텐츠", "세로형 영상 관리", "/admin/content"],
   ["⇩", "결과 / Export", "CSV 내보내기", "/admin/results"],
   ["▣", "현장 전광판", "읽기 전용 송출", "/admin/display"],
   ["◇", "QA / 리허설", "상태 시뮬레이션", "/admin/qa"],

@@ -71,7 +71,7 @@ select * from public.draw_prize_item_winner_for_stage(
   '00000000-0000-4000-8000-000000000100',
   (select id from public.prize_inventory
    where event_id = '00000000-0000-4000-8000-000000000100'
-     and pool = 'ALL_PARTICIPANTS' and display_order = 1),
+     and pool = 'ALL_PARTICIPANTS' and display_order = 2),
   'SECOND'
 );
 reset role;

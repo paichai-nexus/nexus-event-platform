@@ -18,10 +18,10 @@ insert into public.profiles (user_id, role, display_name, active) values
 on conflict (user_id) do update set role = excluded.role, active = excluded.active;
 
 select pg_temp.assert_true(
-  (select count(*) = 5 and sum(winner_count) = 29 and sum(unit_amount * quantity) = 790000
+  (select count(*) = 6 and sum(winner_count) = 35 and sum(unit_amount * quantity) = 910000
    from public.prize_inventory
    where event_id = '00000000-0000-4000-8000-000000000100' and status = 'CONFIRMED'),
-  'confirmed draw inventory must contain five items, 29 winners, and 790000 won total budget'
+  'confirmed draw inventory must contain six items, 35 winners, and 910000 won total budget'
 );
 
 insert into public.audience_jury_reservations (
@@ -53,7 +53,7 @@ select * from public.draw_prize_item_winner(
 select * from public.draw_prize_item_winner(
   '00000000-0000-4000-8000-000000000100',
   (select id from public.prize_inventory where event_id = '00000000-0000-4000-8000-000000000100'
-    and pool = 'ALL_PARTICIPANTS' and display_order = 1)
+    and pool = 'ALL_PARTICIPANTS' and display_order = 4)
 );
 reset role;
 
@@ -79,7 +79,7 @@ begin
     perform public.draw_prize_item_winner(
       '00000000-0000-4000-8000-000000000100',
       (select id from public.prize_inventory where event_id = '00000000-0000-4000-8000-000000000100'
-        and pool = 'ALL_PARTICIPANTS' and display_order = 1)
+        and pool = 'ALL_PARTICIPANTS' and display_order = 4)
     );
   exception when others then
     if position('PRIZE_DRAW_COMPLETED' in sqlerrm) > 0 then blocked := true; else raise; end if;

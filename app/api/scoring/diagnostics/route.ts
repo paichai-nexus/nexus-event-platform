@@ -26,14 +26,15 @@ export async function GET(request: Request) {
     }
     const db = await createSupabaseServerClient();
     if (!db) return Response.json({ ok: false, error: "DATABASE_UNAVAILABLE" }, { status: 503 });
-    const [teams, criteria, assignments, submissions, votes] = await Promise.all([
-      db.from("teams").select("id,name").eq("event_id", eventId).eq("active", true),
+    const [teams, criteria, assignments, submissions, votes, paperScores] = await Promise.all([
+      db.from("teams").select("id,name,category,presentation_order").eq("event_id", eventId).eq("active", true).order("presentation_order"),
       db.from("evaluation_criteria").select("id,max_score,weight").eq("event_id", eventId).eq("scope", "JUDGE").eq("active", true),
       db.from("judge_assignments").select("team_id,judge_user_id").eq("event_id", eventId).eq("active", true),
       db.from("judge_submissions").select("id,team_id,judge_user_id,status").eq("event_id", eventId),
       db.rpc("get_audience_vote_snapshot", { p_event_id: eventId }),
+      db.from("paper_judge_scores").select("team_id,judge_slot,total_score,status").eq("event_id", eventId),
     ]);
-    if ([teams,criteria,assignments,submissions,votes].some((x) => x.error)) {
+    if ([teams,criteria,assignments,submissions,votes,paperScores].some((x) => x.error)) {
       return Response.json({ ok: false, error: "SCORING_READ_FAILED" }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
     const ids = (submissions.data ?? []).map((s) => s.id);
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
     if (scores.error) return Response.json({ ok: false, error: "SCORING_READ_FAILED" }, { status: 503 });
     const report = summarizeScoringDiagnostics({
       teams: teams.data ?? [], criteria: criteria.data ?? [], assignments: assignments.data ?? [],
-      submissions: submissions.data ?? [], scores: scores.data ?? [], votes: votes.data ?? [],
+      submissions: submissions.data ?? [], scores: scores.data ?? [], votes: votes.data ?? [], paperScores: paperScores.data ?? [],
     });
     return Response.json({ ok: true, runtimeMode, eventId, ...report }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   } catch (error) {

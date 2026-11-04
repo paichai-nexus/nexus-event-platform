@@ -38,36 +38,36 @@ export default function DashboardPage() {
 
   const cards = useMemo<WorkflowCard[]>(() => [
     {
-      step: "01", title: "1부 출석", time: "행사 입장", status: attendance?.partOneCount ? "진행 중" : "대기", tone: attendance?.partOneCount ? "success" : "neutral",
-      value: `${attendance?.partOneCount ?? 0}명`, detail: "QR 출석 · 학과별 PCU 선착순 발급", next: "스크린에 1부 QR을 띄우고 출석을 확인하세요.",
-      href: "/admin/check-in?part=1", action: "1부 QR 보기", secondaryHref: "/admin/audience", secondaryAction: "PCU 명단 확인",
+      step: "01", title: "청중평가단 등록", time: "1부 입장", status: "준비", tone: "blue",
+      value: "최대 120명", detail: "6개 학과별 선착순 20명 · PCU 코드", next: "예약자 또는 현장 참가자의 평가단 등록 상태를 확인하세요.",
+      href: "/admin/audience", action: "평가단 등록·명단", secondaryHref: "/admin/check-in?part=1", secondaryAction: "입장 QR",
     },
     {
-      step: "02", title: "2부 출석", time: "2부 시작 전", status: attendance?.partTwoCount ? "진행 중" : "대기", tone: attendance?.partTwoCount ? "success" : "neutral",
-      value: `${attendance?.partTwoCount ?? 0}명`, detail: `1·2부 모두 출석 ${attendance?.bothCount ?? 0}명`, next: "2부 QR을 띄우고 럭키드로우 대상자를 확보하세요.",
-      href: "/admin/check-in?part=2", action: "2부 QR 보기",
+      step: "02", title: "일반 청중 등록", time: "1·2부 출석", status: attendance?.partOneCount ? "진행 중" : "대기", tone: attendance?.partOneCount ? "success" : "neutral",
+      value: `${attendance?.partOneCount ?? 0}명`, detail: `2부 ${attendance?.partTwoCount ?? 0}명 · 모두 출석 ${attendance?.bothCount ?? 0}명`, next: "스크린에 출석 QR을 띄우고 실시간 인원을 확인하세요.",
+      href: "/admin/check-in", action: "출석 QR·카운트",
     },
     {
-      step: "03", title: "청중평가", time: "15:00 / 16:00", status: voteStatus, tone: voteTone,
+      step: "03", title: "청중평가단 점수 입력", time: "부문 종료 후", status: voteStatus, tone: voteTone,
       value: `${state.voteCount}건`, detail: activeTeam ? `현재 부문: ${activeTeam.category === "BUSINESS_ANALYSIS" ? "기업분석" : "창업경진"}` : "기업분석 → 창업경진 순서",
       next: "발표 종료 후 해당 부문 투표를 시작하고, 제출 완료 뒤 마감하세요.", href: "/admin/voting", action: "투표 시작·마감",
     },
     {
-      step: "04", title: "점수 집계", time: "투표 마감 후", status: submittedJudges === 3 ? "입력 완료" : "입력 대기", tone: submittedJudges === 3 ? "success" : "warning",
+      step: "04", title: "전문심사위원 점수 입력", time: "종이 심사표 회수 후", status: submittedJudges === 3 ? "입력 완료" : "입력 대기", tone: submittedJudges === 3 ? "success" : "warning",
       value: `${submittedJudges} / 3명`, detail: "종이 심사표를 팀별·심사위원별 수기 입력", next: "심사 점수를 먼저 입력하고 청중 득표와 함께 검토하세요.",
-      href: "/admin/judging", action: "심사 점수 입력", secondaryHref: "/admin/scoring", secondaryAction: "집계표 보기",
+      href: "/admin/judging", action: "수기 점수 입력",
     },
     {
-      step: "05", title: "럭키드로우", time: "1부 종료 / 3부", status: state.prizeHistory.length ? "진행 중" : "대기", tone: state.prizeHistory.length ? "blue" : "neutral",
-      value: `${state.prizeHistory.length}명`, detail: "출석자 대상 · 중복 당첨 자동 차단", next: "먼저 대상자 명단을 봉인한 뒤 경품별 추첨을 실행하세요.",
-      href: "/admin/prize", action: "경품 추첨 열기",
+      step: "05", title: "합산 점수 디스플레이", time: "점수 입력 중", status: "실시간", tone: "blue",
+      value: "12팀", detail: "청중 선택 수 + 전문심사 원점수", next: "수기 입력과 청중 제출이 반영되는지 전광판형 표에서 확인하세요.",
+      href: "/admin/scoring", action: "집계표 보기",
     },
     {
-      step: "06", title: "시상식", time: "17:10~17:30", status: state.resultStatus === "FINALIZED" ? "확정" : "잠금", tone: state.resultStatus === "FINALIZED" ? "success" : "warning",
-      value: state.resultStatus === "FINALIZED" ? "공개 가능" : "미공개", detail: "승인된 결과만 전광판에 공개", next: "점수 규정과 최종 결과 승인 후에만 공개하세요.",
-      href: "/admin/ceremony", action: "시상식 제어", secondaryHref: "/admin/display", secondaryAction: "전광판 열기",
+      step: "06", title: "럭키드로우", time: "1부 1차 · 3부 2·3차", status: state.prizeHistory.length ? "진행 중" : "대기", tone: state.prizeHistory.length ? "blue" : "neutral",
+      value: `${state.prizeHistory.length}명`, detail: "출석자 대상 · 중복 당첨 자동 차단", next: "차수와 경품을 확인한 뒤 추첨하고 전체화면으로 공개하세요.",
+      href: "/admin/prize", action: "경품 추첨", secondaryHref: "/admin/prize/finale", secondaryAction: "전체화면",
     },
-  ], [activeTeam, attendance, state.prizeHistory.length, state.resultStatus, state.voteCount, submittedJudges, voteStatus, voteTone]);
+  ], [activeTeam, attendance, state.prizeHistory.length, state.voteCount, submittedJudges, voteStatus, voteTone]);
 
   return <div className="admin-page admin-ops-home">
     <div className="admin-page__top admin-page__top--hero">

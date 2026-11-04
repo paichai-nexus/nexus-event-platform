@@ -3,6 +3,7 @@ import "server-only";
 import type {
   Assignment,
   Criterion,
+  PaperScore,
   Score,
   Submission,
   Team,
@@ -18,6 +19,7 @@ export type ScoringDiagnosticsInput = {
   submissions: Submission[];
   scores: Score[];
   votes: Vote[];
+  paperScores: PaperScore[];
 };
 
 type PostgresDiagnosticsPayload = ScoringDiagnosticsInput & {
@@ -37,7 +39,9 @@ select jsonb_build_object(
   'teams', coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', team.id,
-      'name', coalesce(team.name, '미등록 팀 ' || team.presentation_order::text)
+      'name', coalesce(team.name, '미등록 팀 ' || team.presentation_order::text),
+      'category', team.category,
+      'presentation_order', team.presentation_order
     ) order by team.presentation_order)
     from public.teams team
     where team.event_id = :'event_id'::uuid and team.active = true
@@ -89,6 +93,16 @@ select jsonb_build_object(
     ) order by vote.team_id)
     from public.get_audience_vote_snapshot(:'event_id'::uuid) vote
   ), '[]'::jsonb),
+  'paperScores', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'team_id', paper.team_id,
+      'judge_slot', paper.judge_slot,
+      'total_score', paper.total_score,
+      'status', paper.status
+    ) order by paper.team_id, paper.judge_slot)
+    from public.paper_judge_scores paper
+    where paper.event_id = :'event_id'::uuid
+  ), '[]'::jsonb),
   'integrity', jsonb_build_object(
     'duplicateAssignments', exists (
       select 1 from public.judge_assignments assignment
@@ -135,5 +149,6 @@ export async function readPostgresScoringDiagnostics(
     submissions: payload.submissions,
     scores: payload.scores,
     votes: payload.votes,
+    paperScores: payload.paperScores,
   };
 }

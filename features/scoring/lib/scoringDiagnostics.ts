@@ -3,12 +3,13 @@ export type Assignment = { team_id: string; judge_user_id: string };
 export type Submission = { id: string; team_id: string; judge_user_id: string; status: string };
 export type Score = { submission_id: string; criterion_id: string; score: number | string };
 export type Vote = { team_id: string; vote_count: number | string; eligibility_count: number | string };
-export type Team = { id: string; name: string };
+export type PaperScore = { team_id: string; judge_slot: number | string; total_score: number | string; status: string };
+export type Team = { id: string; name: string; category?: string; presentation_order?: number | string };
 
 /** Read-only diagnostics. This deliberately does NOT compute official rankings. */
 export function summarizeScoringDiagnostics(input: {
   teams: Team[]; criteria: Criterion[]; assignments: Assignment[];
-  submissions: Submission[]; scores: Score[]; votes: Vote[];
+  submissions: Submission[]; scores: Score[]; votes: Vote[]; paperScores?: PaperScore[];
 }) {
   const criteria = new Map(input.criteria.map((c) => [c.id, c]));
   const expectedMax = input.criteria.reduce((s, c) => s + Number(c.max_score) * Number(c.weight), 0);
@@ -34,13 +35,26 @@ export function summarizeScoringDiagnostics(input: {
       ? Number((complete.reduce((sum, s) => sum + input.criteria.reduce((subtotal, c) => subtotal + scoredBySubmission.get(s.id)!.get(c.id)! * Number(c.weight), 0), 0) / complete.length / expectedMax * 100).toFixed(4))
       : null;
     const vote = votes.get(team.id);
+    const paperSubmitted = (input.paperScores ?? []).filter((score) => score.team_id === team.id && score.status === "SUBMITTED");
+    const paperJudgeSubmissions = new Set(paperSubmitted.map((score) => Number(score.judge_slot))).size;
+    const professionalRawScore600 = paperJudgeSubmissions === 3
+      ? paperSubmitted.reduce((sum, score) => sum + Number(score.total_score), 0)
+      : null;
+    if (professionalRawScore600 !== null && (!Number.isFinite(professionalRawScore600) || professionalRawScore600 < 0 || professionalRawScore600 > 600)) {
+      throw new Error("INVALID_PAPER_SCORE");
+    }
+    const audienceVoteCount = Number(vote?.vote_count ?? 0);
     return {
-      teamId: team.id, teamName: team.name,
+      teamId: team.id, teamName: team.name, category: team.category ?? "UNKNOWN",
+      presentationOrder: Number(team.presentation_order ?? 0),
       assignedJudges: assigned.length, submittedJudges: submitted.length,
       completeJudgeSubmissions: complete.length,
       judgeScorePreview100: normalizedJudgePreview,
-      audienceVoteCount: Number(vote?.vote_count ?? 0),
+      paperJudgeSubmissions,
+      professionalRawScore600,
+      audienceVoteCount,
       audienceEligibleCount: Number(vote?.eligibility_count ?? 0),
+      operationalCombinedRaw: professionalRawScore600 === null ? null : professionalRawScore600 + audienceVoteCount,
       readyForPolicyReview: ready,
     };
   });

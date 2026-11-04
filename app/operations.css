@@ -219,6 +219,27 @@
 .ops-quick-links nav { display: flex; flex-wrap: wrap; gap: 8px; }
 .ops-quick-links a { padding: 9px 12px; border: 1px solid var(--line); color: #c2cfdd; font-size: .66rem; font-weight: 800; }
 .ops-quick-links a:hover { border-color: var(--blue-bright); color: white; }
+.live-scoreboard { display: grid; gap: 16px; }
+.live-scoreboard__header { display: flex; padding: 22px; align-items: center; justify-content: space-between; border: 1px solid rgba(21,148,255,.4); background: linear-gradient(120deg,#081726,#0c2947); gap: 20px; }
+.live-scoreboard__header small { color: #48b6ff; font-weight: 950; letter-spacing: .12em; }
+.live-scoreboard__header h2 { margin: 7px 0 3px; font-size: clamp(1.6rem,3vw,2.8rem); }
+.live-scoreboard__header p { margin: 0; color: #96a8ba; }
+.live-scoreboard__summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.live-scoreboard__summary > div { display: grid; min-height: 110px; padding: 18px; align-content: center; border: 1px solid var(--line); background: #07111d; gap: 5px; }
+.live-scoreboard__summary span,.live-scoreboard__summary small { color: #8194a8; font-size: .65rem; }
+.live-scoreboard__summary strong { font-size: 1.8rem; }
+.live-scoreboard__group { padding: 18px; border: 1px solid rgba(255,255,255,.1); background: #06101a; }
+.live-scoreboard__group h3 { margin: 0 0 12px; color: #55b8ff; }
+.live-scoreboard__rows { display: grid; gap: 7px; }
+.live-scoreboard__rows article { display: grid; min-height: 62px; padding: 10px 12px; grid-template-columns: 42px minmax(120px,1.1fr) minmax(140px,2fr) minmax(240px,1.4fr); align-items: center; gap: 12px; border: 1px solid rgba(255,255,255,.07); background: #091725; }
+.live-scoreboard__order { display: grid; width: 34px; height: 34px; place-items: center; background: #138fea; color: white; font-weight: 950; }
+.live-scoreboard__bar { height: 12px; overflow: hidden; background: #12283c; }
+.live-scoreboard__bar i { display: block; height: 100%; background: linear-gradient(90deg,#168fff,#3ed6a1); transition: width .55s ease; }
+.live-scoreboard__rows dl { display: grid; margin: 0; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.live-scoreboard__rows dl div { display: grid; gap: 2px; }
+.live-scoreboard__rows dt { color: #71869a; font-size: .55rem; }
+.live-scoreboard__rows dd { margin: 0; color: white; font-weight: 950; }
+.live-scoreboard > footer { padding: 14px; border: 1px solid #8a6324; background: rgba(209,142,34,.1); color: #f4c66b; font-size: .7rem; line-height: 1.6; }
 .category-vote-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 .category-vote-control { display: grid; min-height: 260px; padding: 20px; align-content: start; gap: 9px; }
 .category-vote-control.is-open { border-color: #39d598; box-shadow: inset 0 0 0 1px rgba(57,213,152,.15),0 14px 40px rgba(19,154,109,.12); }
@@ -522,6 +543,10 @@
   .ops-quick-links { align-items: stretch; flex-direction: column; }
   .ops-quick-links nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .category-vote-controls { grid-template-columns: 1fr; }
+  .live-scoreboard__header { align-items: stretch; flex-direction: column; }
+  .live-scoreboard__summary { grid-template-columns: 1fr; }
+  .live-scoreboard__rows article { grid-template-columns: 38px 1fr; }
+  .live-scoreboard__bar,.live-scoreboard__rows dl { grid-column: 1 / -1; }
 }
 
 /* 2026 operations control-room visual system */

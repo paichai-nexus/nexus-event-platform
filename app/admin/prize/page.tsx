@@ -72,13 +72,24 @@ export default function PrizePage() {
   }), [inventory]);
 
   const drawItem = async (item: PrizeInventoryItem) => {
+    const stage = item.drawStage;
+    if (!stage) return;
+
+    const snapshot = stages.find((candidate) => candidate.stage === stage);
+    if (!snapshot?.locked || item.drawnCount >= item.winnerCount) return;
+
+    if (!window.confirm(
+      `${stageMeta[stage].title}: ${item.name} 당첨자 1명을 확정할까요?\\n확정된 당첨은 취소 없이 기록됩니다.`
+    )) return;
+
+    setSelectedStage(stage);
     setDrawingItemId(item.id);
     setFeedback("");
     setWinner(null);
     const response = await fetch("/api/prize-inventory", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId: state.eventId, prizeItemId: item.id, stage: selectedStage }),
+      body: JSON.stringify({ eventId: state.eventId, prizeItemId: item.id, stage }),
     });
     const payload = await response.json();
     if (!response.ok || !payload.ok) setFeedback(payload.error?.message ?? "경품 추첨에 실패했습니다.");
@@ -142,7 +153,7 @@ export default function PrizePage() {
           <div className="prize-pool__items">{items.map((item) => <div className="prize-pool__item" key={item.id}>
             <div><strong>{item.name}{item.pool === "AUDIENCE_JURY" ? " · 청중평가단 전용" : " · 전체 참여자"}</strong><span>{item.unitAmount.toLocaleString("ko-KR")}원 × {item.quantity}개</span></div>
             <div className="prize-pool__progress"><b>{item.drawnCount}</b><span>/ {item.winnerCount}명</span></div>
-            <button className="admin-button admin-button--compact" type="button" disabled={selectedStage !== stage || drawingItemId !== null || item.drawnCount >= item.winnerCount || !stages.find((candidate) => candidate.stage === selectedStage)?.locked} onClick={() => void drawItem(item)}>{drawingItemId === item.id ? "서버 추첨 중…" : item.drawnCount >= item.winnerCount ? "추첨 완료" : selectedStage !== stage ? "다른 순서 경품" : "당첨자 1명 추첨"}</button>
+            <button className="admin-button admin-button--compact" type="button" disabled={drawingItemId !== null || item.drawnCount >= item.winnerCount || !stages.find((candidate) => candidate.stage === stage)?.locked} onClick={() => void drawItem(item)}>{drawingItemId === item.id ? "서버 추첨 중…" : item.drawnCount >= item.winnerCount ? "추첨 완료" : !stages.find((candidate) => candidate.stage === stage)?.locked ? "대상자 미봉인" : "당첨자 1명 추첨"}</button>
           </div>)}</div>
         </article>;
       })}

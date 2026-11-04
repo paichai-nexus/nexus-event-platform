@@ -60,7 +60,7 @@ export function PaperJudgeScoreEntry({ eventId, teams }: { eventId: string; team
 
   return <section className="admin-card paper-score-panel">
     <PanelHeader label="PAPER SCORE ENTRY" title="종이 심사표 수기 입력" aside={<StatusBadge tone={submitted === 3 ? "success" : submitted ? "warning" : "neutral"}>{submitted} / 3 제출</StatusBadge>} />
-    <OperationAlert level="INFO">서류 50점 + 발표 100점 + 질의응답 50점 = 심사위원 1인당 200점입니다. 이 원점수는 공식 환산식 승인 전까지 최종 순위에 자동 반영되지 않습니다.</OperationAlert>
+    <OperationAlert level="INFO">서류 50점 + 발표 100점 + 질의응답 50점 = 심사위원 1인당 200점입니다. 제출·잠금 완료 시 관리자 점수판에 자동 반영됩니다. 청중평가는 0점이며 전문가 심사 총점은 600점 만점입니다.</OperationAlert>
     <label className="admin-field paper-score-panel__team">입력 대상 팀<select value={teamId} onChange={(event) => { setTeamId(event.target.value); setDrafts(draftsFor(event.target.value, records)); }}>{activeTeams.map((team) => <option key={team.id} value={team.id}>{String(team.order).padStart(2, "0")} · {teamDisplayName(team)}</option>)}</select></label>
     {selected && <div className="paper-score-panel__identity"><strong>{teamDisplayName(selected)}</strong><span>{selected.department ?? "학과 미등록"} · {selected.category === "STARTUP" ? "창업 부문" : "기업분석 부문"}</span></div>}
     <div className="paper-score-grid"><header><span>심사위원</span><b>서류 / 50</b><b>발표 / 100</b><b>질의응답 / 50</b><b>합계 / 200</b><b>상태</b></header>{([1, 2, 3] as const).map((slot, index) => {

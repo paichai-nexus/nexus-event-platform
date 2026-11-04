@@ -39,7 +39,30 @@ export async function GET(request: Request) {
       db.from("result_snapshots").select("id",{count:"exact",head:true}).eq("event_id",eventId),
     ]);
     const queries = [attendance,pcu,ballots,paper,draws,stages,oldDraws,checkins,submissions,judges,results];
-    if (queries.some((q)=>q.error)) throw new DomainError("DATABASE_ERROR","초기화 전 데이터 검사가 실패했습니다.",503);
+    const tableNames = [
+      "part_attendance_entries",
+      "audience_jury_reservations",
+      "audience_rank_ballots",
+      "paper_judge_scores",
+      "prize_item_draws",
+      "prize_stage_snapshots",
+      "prize_draws",
+      "check_ins",
+      "audience_submissions",
+      "judge_submissions",
+      "result_snapshots",
+    ];
+    const failed = queries.flatMap((q, i) =>
+      q.error ? [{ table: tableNames[i], error: q.error.message }] : []
+    );
+    if (failed.length) {
+      console.error("RESET_PREFLIGHT_DB_ERRORS", failed);
+      throw new DomainError(
+        "DATABASE_ERROR",
+        `조회 실패 테이블: ${failed.map(x => x.table).join(", ")}`,
+        503
+      );
+    }
     const otherDataCount=queries.slice(2).reduce((sum,q)=>sum+(q.count??0),0);
     const allowed = event.data.mode === "REHEARSAL" && event.data.result_status === "LOCKED" &&
       !["FINALIZED","ENDED"].includes(event.data.status) && otherDataCount===0;

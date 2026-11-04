@@ -11,7 +11,7 @@ const credentialsSchema = z.object({
   eventId: z.string().uuid().optional(),
   studentNumber: z.string().trim().min(5).max(20),
   name: z.string().trim().min(2).max(30),
-  serialNumber: z.string().trim().regex(/^PCU-(?:1(?:0[1-9]|[1-9][0-9])|2(?:0[0-9]|1[0-9]|20))$/i),
+  serialNumber: z.string().trim().regex(/^PCU-[1-6](?:0[1-9]|1[0-9]|20)$/i),
 });
 
 function authenticatedResponse(data: unknown, token: string) {

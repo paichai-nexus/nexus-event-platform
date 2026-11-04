@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { downloadCsv } from "@/features/export/lib/downloadCsv";
 
 type ScoreTeam = {
   id: string;
@@ -57,6 +58,7 @@ export function LiveScoringBoard({
         }
       } catch (err) {
         if (active) {
+          setData(null);
           setError(
             err instanceof Error ? err.message : "조회 오류"
           );
@@ -77,43 +79,24 @@ export function LiveScoringBoard({
   const categories = ["BUSINESS_ANALYSIS", "STARTUP"];
 
   function exportCsv() {
-    const header = [
-      "부문", "순위", "팀명", "심사위원1",
-      "심사위원2", "심사위원3", "총점", "상태"
-    ];
-
-    const records = teams.map(team => [
-      team.category,
-      team.rank ?? "",
-      team.name,
-      ...team.judgeSlots.map(v => v ?? ""),
-      team.total ?? "",
-      team.complete ? "완료" : "미완료",
-    ]);
-
-    const csv = [header, ...records]
-      .map(row => row.map(value =>
-        `"${String(value).replace(/"/g, '""')}"`
-      ).join(","))
-      .join("\r\n");
-
-    const blob = new Blob(
-      ["\uFEFF", csv],
-      { type: "text/csv;charset=utf-8" }
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "nexus-judge-results.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    const rows = teams.map(team => ({
+      category: team.category,
+      rank: team.rank ?? "미확정",
+      teamName: team.name,
+      judge1: team.judgeSlots[0] ?? "미제출",
+      judge2: team.judgeSlots[1] ?? "미제출",
+      judge3: team.judgeSlots[2] ?? "미제출",
+      total: team.total ?? "미확정",
+      status: team.complete ? "제출 완료" : `${team.submittedJudges}/3 제출`,
+    }));
+    downloadCsv("nexus-judge-only-600.csv", rows);
   }
 
   return (
     <section className="admin-card" style={{ padding: 24 }}>
       <h2>심사위원 최종 점수 집계</h2>
       <p>심사위원 3명 × 200점 = 600점 만점</p>
-      <p>청중평가 미반영 · 5초 자동 갱신</p>
+      <p>청중평가 0점 · 600점 만점 · 5초 자동 갱신</p>
 
       {error && <p role="alert">{error}</p>}
       {!data && !error && <p>점수 조회 중...</p>}

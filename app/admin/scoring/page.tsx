@@ -2,6 +2,7 @@
 
 import { DataTable } from "@/components/ui/DataTable";
 import { ScoringDiagnosticsPanel } from "@/components/ScoringDiagnosticsPanel";
+import { LiveScoringBoard } from "@/components/LiveScoringBoard";
 import { OperationAlert } from "@/components/ui/OperationAlert";
 import { PanelHeader } from "@/components/ui/PanelHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -23,6 +24,7 @@ export default function ScoringPage() {
   return (
     <div className="admin-page">
       <SectionLabel label="SCORING" title="최종 점수 집계" description="정책 충돌 검증 · 공식 결과 확정 잠금" />
+      {state.runtimeMode !== "mock" && state.snapshotReady && <LiveScoringBoard eventId={state.eventId} />}
       {state.runtimeMode !== "mock" && <ScoringDiagnosticsPanel eventId={state.eventId} />}
       <ScoringPolicyControl eventId={state.eventId} />
       <section className="scoring-rule"><div><small>SCORING RULE</small><strong>전문심사 <b>{PROFESSIONAL_WEIGHT * 100}%</b></strong><strong>청중평가 <b>{AUDIENCE_WEIGHT * 100}%</b></strong></div><p>운영 화면에서 비율을 변경할 수 없습니다.</p></section>

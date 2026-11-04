@@ -16,6 +16,8 @@ export default function PrizeFinalePage() {
   const [items, setItems] = useState<PrizeInventoryItem[]>([]);
   const [draws, setDraws] = useState<PrizeItemDraw[]>([]);
   const [spotlight, setSpotlight] = useState<PrizeItemDraw | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const initializedRef = useRef(false);
   const [online, setOnline] = useState(false);
   const lastSeenDraw = useRef<string | null>(null);
   const load = useCallback(async () => {
@@ -30,10 +32,17 @@ export default function PrizeFinalePage() {
       setItems(inventoryPayload.data as PrizeInventoryItem[]);
       setDraws(nextDraws);
       const newest = nextDraws[0];
-      if (newest && newest.drawId !== lastSeenDraw.current) {
+      if (!initializedRef.current) {
+        // Do not replay yesterday's/earlier winners on initial projector load.
+        initializedRef.current = true;
+        lastSeenDraw.current = newest?.drawId ?? null;
+      } else if (newest && newest.drawId !== lastSeenDraw.current) {
         lastSeenDraw.current = newest.drawId;
+        setRevealed(false);
         setSpotlight(newest);
-        window.setTimeout(() => setSpotlight((current) => current?.drawId === newest.drawId ? null : current), 8_000);
+        // The API already confirmed the winner. Animation only delays revealing identity.
+        window.setTimeout(() => setRevealed(true), 2500);
+        window.setTimeout(() => setSpotlight((current) => current?.drawId === newest.drawId ? null : current), 10_500);
       }
       setOnline(true);
     } catch { setOnline(false); }
@@ -45,6 +54,15 @@ export default function PrizeFinalePage() {
   const enterFullscreen = () => document.documentElement.requestFullscreen?.();
 
   return <main className="prize-finale">
+    <style>{`
+.nexus-lucky-projector-rolling{display:grid;place-items:center;gap:24px;align-content:center;min-height:70vh;text-align:center;color:#fff}
+.nexus-lucky-projector-rolling small{font-size:clamp(26px,4vw,55px);color:#fce68b;letter-spacing:.16em;text-shadow:0 0 40px #ffb300}
+.nexus-lucky-projector-rolling p{font-size:clamp(34px,6vw,80px);font-weight:950}
+.nexus-lucky-projector-rolling b{font-size:clamp(50px,10vw,130px);letter-spacing:.12em;color:#9de5ff;animation:nexus-projector-flicker .25s ease-in-out infinite alternate;text-shadow:0 0 50px #38bdf8}
+.nexus-lucky-projector-rolling em{font-size:clamp(16px,2vw,30px);font-style:normal;color:#ccdeef}
+@keyframes nexus-projector-flicker{from{opacity:.5;transform:scale(.94)}to{opacity:1;transform:scale(1.05)}}
+@media(prefers-reduced-motion:reduce){.nexus-lucky-projector-rolling b{animation:none}}
+`}</style>
     <header className="prize-finale__header"><div><small>PAEJAE UNIVERSITY · 2026</small><strong>제24회 경영대학 학술제</strong></div><div><span className={online ? "is-online" : ""}>{online ? "LIVE" : "OFFLINE"}</span><button type="button" onClick={enterFullscreen}>전체 화면</button><Link href="/admin/prize">운영 화면</Link></div></header>
     <section className="prize-finale__intro"><small>LUCKY DRAW · ENDING CREDITS</small><h1>오늘의 행운,<br /><em>끝까지 이어집니다.</em></h1><p>출석 단계별로 봉인된 대상자 안에서 서버가 무작위 당첨자를 확정합니다.</p></section>
     <section className="prize-finale__credits">
@@ -54,6 +72,6 @@ export default function PrizeFinalePage() {
     </section>
     {draws.length > 0 && <section className="prize-finale__winners" aria-label="최근 당첨자"><small>RECENT WINNERS</small><div>{draws.slice(0, 6).map((draw) => <article key={draw.drawId}><b>{draw.maskedName}</b><span>{draw.department} · {draw.maskedStudentNumber}</span><em>{draw.prizeName}</em></article>)}</div></section>}
     <footer className="prize-finale__footer"><div><small>DRAW PROGRESS</small><strong>{drawn}<span>/ {total}</span></strong></div><p>중복 당첨 차단 · 서버 확정 · 개인정보 마스킹 · 감사 기록 보존</p><b>THANK YOU</b></footer>
-    {spotlight && <section className="prize-winner-spotlight" role="status" aria-live="assertive"><div className="prize-winner-spotlight__rays" /><div className="prize-winner-spotlight__confetti" aria-hidden="true">✦ ◆ ★ ✦ ● ★ ◆ ✦ ★ ●</div><small>CONGRATULATIONS</small><p>{spotlight.prizeName}</p><h2>{spotlight.maskedName}</h2><h3>{spotlight.department} <i>·</i> {spotlight.maskedStudentNumber}</h3><strong>{spotlight.participantCode}</strong><span>당첨을 축하합니다!</span></section>}
+    {spotlight && <section className="prize-winner-spotlight" role="status" aria-live="assertive"><div className="prize-winner-spotlight__rays" /><div className="prize-winner-spotlight__confetti" aria-hidden="true">✦ ◆ ★ ✦ ● ★ ◆ ✦ ★ ●</div>{revealed ? <><small>CONGRATULATIONS</small><p>{spotlight.prizeName}</p><h2>{spotlight.maskedName}</h2><h3>{spotlight.department} <i>·</i> {spotlight.maskedStudentNumber}</h3><strong>{spotlight.participantCode}</strong><span>당첨을 축하합니다!</span></> : <div className="nexus-lucky-projector-rolling"><small>LUCKY DRAW</small><p>운명의 주인공을 공개합니다</p><b>✦ ◈ ✧ ◇ ✦</b><em>서버 당첨 확정 · 결과 공개 준비</em></div>}</section>}
   </main>;
 }

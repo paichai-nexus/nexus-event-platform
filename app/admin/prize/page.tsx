@@ -16,6 +16,30 @@ const stageMeta: Record<PrizeDrawStage, { label: string; title: string; detail: 
   THIRD: { label: "GRAND FINALE", title: "피날레 추첨", detail: "2부 출석자 · 올리브영 3만원 6명 · 에어팟 1명 · 커피 5명" },
 };
 
+const luckyCss = `
+.nexus-lucky-show-overlay{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 44%,#153f70 0%,#061429 46%,#01050f 100%);color:white;text-align:center;font-family:inherit}
+.nexus-lucky-show-rays{position:absolute;inset:-100%;background:repeating-conic-gradient(from 0deg at 50% 50%,transparent 0deg 12deg,rgba(79,165,255,.075) 13deg 18deg,transparent 19deg 30deg);animation:nexus-lucky-spin 28s linear infinite;pointer-events:none}
+.nexus-lucky-show-content{position:relative;z-index:2;width:min(940px,94vw);padding:clamp(18px,4vw,48px);border:1px solid #3286c4;border-radius:24px;background:linear-gradient(140deg,rgba(12,31,56,.85),rgba(5,15,32,.91));box-shadow:0 0 100px rgba(17,148,255,.3),inset 0 0 70px rgba(40,120,255,.08)}
+.nexus-lucky-show-tag{color:#70d5ff;letter-spacing:.35em;font-size:clamp(12px,1.3vw,18px);font-weight:900}
+.nexus-lucky-show-congrats{font-weight:950;letter-spacing:.15em;color:#fce78b;font-size:clamp(18px,3vw,42px);margin:22px 0 10px;text-shadow:0 0 34px #ffb800;animation:nexus-lucky-pop .65s both}
+.nexus-lucky-show-content h2{font-size:clamp(70px,13vw,180px);line-height:1.1;margin:15px 0;color:#fff;text-shadow:0 0 35px #4fc3ff,0 0 90px #2879ff;animation:nexus-lucky-pop .65s both}
+.nexus-lucky-show-detail{font-size:clamp(22px,4vw,42px);font-weight:800;letter-spacing:.03em}
+.nexus-lucky-show-code{display:inline-block;margin-top:18px;padding:9px 22px;border:1px solid #68b7fa;border-radius:999px;color:#8ed8ff;font-weight:850;font-size:clamp(20px,2.6vw,34px)}
+.nexus-lucky-show-prize{margin-top:24px;color:#ffe69b;font-size:clamp(24px,3.5vw,46px);font-weight:900}
+.nexus-lucky-show-loading{margin-top:54px;font-size:clamp(34px,6vw,75px);font-weight:900;animation:nexus-lucky-pulse .65s ease-in-out infinite alternate}
+.nexus-lucky-show-spinner{font-size:clamp(50px,10vw,115px);letter-spacing:.18em;color:#9edeff;margin:25px 0;filter:drop-shadow(0 0 20px #38bdf8);animation:nexus-lucky-pulse .25s ease-in-out infinite alternate}
+.nexus-lucky-show-hint{color:#b7ccdd;font-size:18px}
+.nexus-lucky-show-progress{margin-top:28px;color:#c6d9ef;font-size:clamp(16px,1.8vw,24px);font-weight:700}
+.nexus-lucky-show-close{margin-top:32px;padding:15px 35px;border:2px solid #8ccfff;border-radius:999px;background:#1177c1;color:#fff;font-size:clamp(16px,2vw,24px);font-weight:900;cursor:pointer}
+.nexus-lucky-show-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:3}
+.nexus-lucky-show-confetti i{position:absolute;top:-6vh;width:10px;height:20px;animation:nexus-lucky-fall 3s linear infinite}
+@keyframes nexus-lucky-pop{from{opacity:0;transform:scale(.6)}70%{transform:scale(1.08)}to{opacity:1;transform:scale(1)}}
+@keyframes nexus-lucky-pulse{from{opacity:.4;transform:scale(.92)}to{opacity:1;transform:scale(1.04)}}
+@keyframes nexus-lucky-fall{to{transform:translate3d(15vw,115vh,0) rotate(720deg)}}
+@keyframes nexus-lucky-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.nexus-lucky-show-overlay *{animation:none!important}}
+`;
+
 export default function PrizePage() {
   const { state } = useEventOps();
   const [inventory, setInventory] = useState<PrizeInventoryItem[]>([]);
@@ -23,6 +47,8 @@ export default function PrizePage() {
   const [drawingItemId, setDrawingItemId] = useState<string | null>(null);
   const [winner, setWinner] = useState<PrizeItemDraw | null>(null);
   const [presentation, setPresentation] = useState(false);
+  const [showWinnerOverlay, setShowWinnerOverlay] = useState(false);
+  const [winnerRevealed, setWinnerRevealed] = useState(false);
   const [stages, setStages] = useState<PrizeStageSnapshot[]>([]);
   const [lockingStage, setLockingStage] = useState<PrizeDrawStage | null>(null);
   const [selectedStage, setSelectedStage] = useState<PrizeDrawStage>("FIRST");
@@ -57,12 +83,21 @@ export default function PrizePage() {
     const payload = await response.json();
     if (!response.ok || !payload.ok) setFeedback(payload.error?.message ?? "경품 추첨에 실패했습니다.");
     else {
-      setWinner(payload.data as PrizeItemDraw);
+      const confirmed = payload.data as PrizeItemDraw;
+      setWinner(confirmed);
+      setWinnerRevealed(false);
+      setShowWinnerOverlay(true);
       setFeedback(`${item.name} ${item.drawnCount + 1}번째 당첨자가 서버에서 확정되었습니다.`);
       await loadInventory();
     }
     setDrawingItemId(null);
   };
+
+  useEffect(() => {
+    if (!showWinnerOverlay || winnerRevealed) return;
+    const timer = window.setTimeout(() => setWinnerRevealed(true), 2500);
+    return () => window.clearTimeout(timer);
+  }, [showWinnerOverlay, winnerRevealed]);
 
   const togglePresentation = async () => {
     if (!presentation) await document.documentElement.requestFullscreen?.().catch(() => undefined);
@@ -121,6 +156,27 @@ export default function PrizePage() {
       <span>{winner.prizeName} · {winner.round}번째 당첨</span>
       <button className="admin-button admin-button--primary" type="button" onClick={() => void togglePresentation()}>{presentation ? "전체 화면 종료" : "전체 화면 발표"}</button>
     </section>}
+    {showWinnerOverlay && winner && <div className="nexus-lucky-show-overlay" role="dialog" aria-modal="true" aria-label="럭키드로우 당첨 발표">
+      <div className="nexus-lucky-show-rays" aria-hidden="true" />
+      {winnerRevealed && <div className="nexus-lucky-show-confetti" aria-hidden="true">{Array.from({ length: 48 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i % 13) * -0.19}s`, animationDuration: `${2 + (i % 7) * .2}s`, background: ['#ffd75e','#38bdf8','#f472b6','#86efac'][i % 4] }} />)}</div>}
+      <div className="nexus-lucky-show-content">
+        <div className="nexus-lucky-show-tag">PAICHAI NEXUS · LUCKY DRAW</div>
+        {winnerRevealed ? <>
+          <div className="nexus-lucky-show-congrats">✦ CONGRATULATIONS ✦</div>
+          <h2>{winner.maskedName}</h2>
+          <div className="nexus-lucky-show-detail">{winner.department} · {winner.maskedStudentNumber}</div>
+          <div className="nexus-lucky-show-code">{winner.participantCode}</div>
+          <div className="nexus-lucky-show-prize">🎁 {winner.prizeName}</div>
+        </> : <>
+          <div className="nexus-lucky-show-loading">운명의 주인공은?</div>
+          <div className="nexus-lucky-show-spinner" aria-label="당첨 결과 공개 준비 중">✦ ◇ ✧ ◈ ✦</div>
+          <div className="nexus-lucky-show-hint">서버 당첨 확정 · 공개 연출 중</div>
+        </>}
+        <div className="nexus-lucky-show-progress">{winner.prizeName} · {winner.round}번째 확정</div>
+        {winnerRevealed && <button className="nexus-lucky-show-close" type="button" onClick={() => setShowWinnerOverlay(false)}>당첨자 확인 · 다음 추첨</button>}
+      </div>
+    </div>}
+    <style>{luckyCss}</style>
     <p className="participant-feedback" role="status">{feedback}</p>
   </div>;
 }

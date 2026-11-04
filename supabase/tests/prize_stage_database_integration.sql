@@ -29,7 +29,7 @@ on conflict (event_id, participant_code) do nothing;
 insert into public.part_attendance_entries (
   event_id, participant_id, part, department, student_number, attendee_name
 )
-select '00000000-0000-4000-8000-000000000100', participant.id, 2,
+select '00000000-0000-4000-8000-000000000100', participant.id, 1,
   '경영학과', 'STAGE-001', '스테이지일'
 from public.participants participant
 where participant.event_id = '00000000-0000-4000-8000-000000000100'
@@ -39,14 +39,14 @@ on conflict (event_id, student_number, part) do nothing;
 select set_config('request.jwt.claim.sub', '93000000-0000-4000-8000-000000000001', true);
 set local role authenticated;
 select * from public.lock_prize_stage_eligibility(
-  '00000000-0000-4000-8000-000000000100', 'SECOND'
+  '00000000-0000-4000-8000-000000000100', 'FIRST'
 );
 reset role;
 
 select pg_temp.assert_true(
   (select eligible_count = 1 from public.prize_stage_snapshots
-   where event_id = '00000000-0000-4000-8000-000000000100' and stage = 'SECOND'),
-  'second draw snapshot must freeze the one participant checked in at lock time'
+   where event_id = '00000000-0000-4000-8000-000000000100' and stage = 'FIRST'),
+  'first draw snapshot must freeze the one participant checked in at lock time'
 );
 
 insert into public.participants (event_id, participant_code, display_label, affiliation)
@@ -55,7 +55,7 @@ on conflict (event_id, participant_code) do nothing;
 insert into public.part_attendance_entries (
   event_id, participant_id, part, department, student_number, attendee_name
 )
-select '00000000-0000-4000-8000-000000000100', participant.id, 2,
+select '00000000-0000-4000-8000-000000000100', participant.id, 1,
   '경영학과', 'STAGE-002', '스테이지이'
 from public.participants participant
 where participant.event_id = '00000000-0000-4000-8000-000000000100'
@@ -65,20 +65,20 @@ on conflict (event_id, student_number, part) do nothing;
 select set_config('request.jwt.claim.sub', '93000000-0000-4000-8000-000000000001', true);
 set local role authenticated;
 select * from public.lock_prize_stage_eligibility(
-  '00000000-0000-4000-8000-000000000100', 'SECOND'
+  '00000000-0000-4000-8000-000000000100', 'FIRST'
 );
 select * from public.draw_prize_item_winner_for_stage(
   '00000000-0000-4000-8000-000000000100',
   (select id from public.prize_inventory
    where event_id = '00000000-0000-4000-8000-000000000100'
      and pool = 'ALL_PARTICIPANTS' and display_order = 1),
-  'SECOND'
+  'FIRST'
 );
 reset role;
 
 select pg_temp.assert_true(
   (select eligible_count = 1 from public.prize_stage_snapshots
-   where event_id = '00000000-0000-4000-8000-000000000100' and stage = 'SECOND'),
+   where event_id = '00000000-0000-4000-8000-000000000100' and stage = 'FIRST'),
   're-locking a stage must not add a participant who checked in after the snapshot'
 );
 select pg_temp.assert_true(

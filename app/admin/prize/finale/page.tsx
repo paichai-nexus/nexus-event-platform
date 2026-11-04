@@ -7,8 +7,8 @@ import type { PrizeInventoryItem, PrizeItemDraw } from "@/types/prize-inventory"
 
 const stageCopy = {
   FIRST: { step: "01", eyebrow: "1부 종료 · 전체 참여 경품", title: "커피 쿠폰 1만원", detail: "1부 QR 출석자 · 15명", accent: "blue" },
-  SECOND: { step: "02", eyebrow: "3부 시작", title: "올리브영 2만원", detail: "2부 출석자", accent: "green" },
-  THIRD: { step: "04", eyebrow: "GRAND FINALE", title: "마지막 럭키드로우", detail: "2부 출석자", accent: "gold" },
+  SECOND: { step: "02", eyebrow: "3부 시작", title: "잔여 경품", detail: "1·2부 출석자", accent: "green" },
+  THIRD: { step: "04", eyebrow: "GRAND FINALE", title: "마지막 럭키드로우", detail: "1·2부 출석자", accent: "gold" },
 } as const;
 
 export default function PrizeFinalePage() {
@@ -67,7 +67,7 @@ export default function PrizeFinalePage() {
     <section className="prize-finale__intro"><small>PAICHAI 2026 · LUCKY DRAW</small><h1>1부 럭키드로우<br /><em>커피 쿠폰 15명</em></h1><p>1부 QR 출석자 대상 · 1만원 커피 쿠폰 · 서버 무작위 추첨</p></section>
     <section className="prize-finale__credits">
       {(["FIRST", "SECOND"] as const).map((stage) => { const meta = stageCopy[stage]; const stageItems = items.filter((item) => item.drawStage === stage); return <article className={`prize-credit prize-credit--${meta.accent}`} key={stage}><b>{meta.step}</b><div><small>{meta.eyebrow}</small><h2>{meta.title}</h2><p>{meta.detail}</p></div><strong>{stageItems.reduce((sum, item) => sum + item.winnerCount, 0)}명</strong></article>; })}
-      <article className="prize-credit prize-credit--red"><b>03</b><div><small>BEST REVIEWER AWARD</small><h2>아웃백 상품권 10만원</h2><p>청중평가단 베스트 리뷰어 2명 · 별도 선정 / 추첨 아님</p></div><strong>2명</strong></article>
+      
       <article className="prize-credit prize-credit--gold prize-credit--final"><b>04</b><div><small>GRAND FINALE · 2부 출석자</small><h2>마지막 럭키드로우</h2><div className="prize-finale__items">{items.filter((item) => item.drawStage === "THIRD").map((item) => <span key={item.id}><strong>{item.name}{item.pool === "AUDIENCE_JURY" ? " · 청중평가단 전용" : ""}</strong><i>{item.winnerCount}명</i></span>)}</div></div><strong>{items.filter((item) => item.drawStage === "THIRD").reduce((sum, item) => sum + item.winnerCount, 0)}명</strong></article>
     </section>
     {draws.length > 0 && <section className="prize-finale__winners" aria-label="최근 당첨자"><small>RECENT WINNERS</small><div>{draws.slice(0, 6).map((draw) => <article key={draw.drawId}><b>{draw.maskedName}</b><span>{draw.department} · {draw.maskedStudentNumber}</span><em>{draw.prizeName}</em></article>)}</div></section>}

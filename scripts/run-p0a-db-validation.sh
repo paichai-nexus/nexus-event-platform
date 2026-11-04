@@ -77,7 +77,7 @@ SQL
 
 createdb --maintenance-db="$maintenance_url" "$empty_db"
 psql "$empty_url" -v ON_ERROR_STOP=1 -f supabase/tests/000_local_auth_bootstrap.sql
-apply_migrations "$empty_url" 001 033
+apply_migrations "$empty_url" 001 035
 psql "$empty_url" -v ON_ERROR_STOP=1 -f supabase/tests/p0a_database_integration.sql
 psql "$empty_url" -v ON_ERROR_STOP=1 -f supabase/tests/audience_jury_database_integration.sql
 psql "$empty_url" -v ON_ERROR_STOP=1 -f supabase/tests/prize_inventory_database_integration.sql
@@ -92,7 +92,7 @@ createdb --maintenance-db="$maintenance_url" "$upgrade_db"
 psql "$upgrade_url" -v ON_ERROR_STOP=1 -f supabase/tests/000_local_auth_bootstrap.sql
 apply_migrations "$upgrade_url" 001 010
 psql "$upgrade_url" -v ON_ERROR_STOP=1 -f supabase/tests/010_upgrade_fixture.sql
-apply_migrations "$upgrade_url" 011 033
+apply_migrations "$upgrade_url" 011 035
 psql "$upgrade_url" -v ON_ERROR_STOP=1 -f supabase/tests/p0a_database_integration.sql
 psql "$upgrade_url" -v ON_ERROR_STOP=1 -f supabase/tests/audience_jury_database_integration.sql
 psql "$upgrade_url" -v ON_ERROR_STOP=1 -f supabase/tests/prize_inventory_database_integration.sql

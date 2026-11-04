@@ -84,43 +84,33 @@ await json("/api/event/control", {
   headers: { ...actorHeaders(adminId), "content-type": "application/json" },
   body: JSON.stringify({ action: "ACTIVATE_TEAM", eventId, teamId: activeTeam.id }),
 });
-await json("/api/event/control", {
-  method: "PATCH",
-  headers: { ...actorHeaders(adminId), "content-type": "application/json" },
-  body: JSON.stringify({ action: "SET_VOTING", eventId, status: "OPEN" }),
-});
 
+// Audience voting is disabled; attendance remains available.
 for (const cookie of audienceCookies) {
-  const state = await json(`/api/votes?eventId=${eventId}`, { headers: { cookie } });
-  assert.equal(state.body.storage, "DATABASE");
-  assert.equal(state.body.data.eligible, true);
-  assert.equal(state.body.data.votingStatus, "OPEN");
-  assert.equal(state.body.data.teamId, activeTeam.id);
+  const blocked = await json(
+    `/api/votes?eventId=${eventId}`,
+    { headers: { cookie } },
+    410
+  );
+  assert.equal(blocked.body.error.code, "VOTING_DISABLED");
 }
 
-const voteOptions = (cookie) => ({
+const blockedPost = await json("/api/votes", {
   method: "POST",
-  headers: { cookie, origin: new URL(baseUrl).origin, "content-type": "application/json" },
+  headers: {
+    cookie: audienceCookies[0],
+    origin: new URL(baseUrl).origin,
+    "content-type": "application/json"
+  },
   body: JSON.stringify({ eventId }),
-});
-const concurrent = await Promise.all([
-  request("/api/votes", voteOptions(audienceCookies[0])),
-  request("/api/votes", voteOptions(audienceCookies[0])),
-]);
-const concurrentBodies = await Promise.all(concurrent.map((response) => response.clone().json().catch(() => null)));
-assert.deepEqual(concurrent.map((response) => response.status).sort(), [200, 200], `Concurrent duplicate vote must reconcile to the single stored row: ${JSON.stringify(concurrentBodies)}`);
-assert.equal(new Set(concurrentBodies.map((body) => body.data.submissionId)).size, 1, "Concurrent responses must identify the same stored submission.");
-for (const cookie of audienceCookies.slice(1)) {
-  await json("/api/votes", voteOptions(cookie));
-}
-const duplicate = await json("/api/votes", voteOptions(audienceCookies[0]));
-assert.equal(duplicate.body.data.submissionId, concurrentBodies[0].data.submissionId);
+}, 410);
+assert.equal(blockedPost.body.error.code, "VOTING_DISABLED");
 
-const afterVotes = await json(`/api/event/snapshot?eventId=${eventId}`, { headers: actorHeaders(adminId) });
-assert.equal(afterVotes.body.data.voteCount, 12);
-const voteTeam = afterVotes.body.data.voteByTeam.find((team) => team.teamId === activeTeam.id);
-assert.equal(voteTeam.voteCount, 12);
-assert.equal(voteTeam.eligibilityCount, 12);
+const afterVotes = await json(
+  `/api/event/snapshot?eventId=${eventId}`,
+  { headers: actorHeaders(adminId) }
+);
+assert.equal(afterVotes.body.data.voteCount, 0);
 
 const publicSnapshot = await json(`/api/event/public-snapshot?eventId=${eventId}`);
 assert.equal(publicSnapshot.body.data.version, afterVotes.body.data.version);
@@ -183,8 +173,8 @@ const finalAdmin = await json(`/api/event/snapshot?eventId=${eventId}`, { header
 const finalPublic = await json(`/api/event/public-snapshot?eventId=${eventId}`);
 assert.equal(finalAdmin.body.runtimeMode, "postgres-test");
 assert.equal(finalAdmin.body.data.checkInCount, 12);
-assert.equal(finalAdmin.body.data.voteCount, 12);
+assert.equal(finalAdmin.body.data.voteCount, 0);
 assert.equal(finalPublic.body.data.version, finalAdmin.body.data.version);
 assert.equal(finalPublic.body.data.activeTeam.id, finalAdmin.body.data.activeTeamId);
 
-console.log("PASS: P0-B HTTP integration completed for 12 audience members and 3 judges.");
+console.log("PASS: audience voting blocked, attendance and 3 judges verified.");

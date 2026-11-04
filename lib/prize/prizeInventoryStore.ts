@@ -14,7 +14,7 @@ const MOCK_EVENT_ID = "00000000-0000-4000-8000-000000000100";
 const definitions: Array<Omit<PrizeInventoryItem, "drawnCount" | "imageUrl" | "status" | "drawStatus">> = [
   { id: "FIRST-COFFEE", pool: "ALL_PARTICIPANTS", displayOrder: 1, name: "커피 쿠폰", unitAmount: 10000, quantity: 15, winnerCount: 15, drawStage: "FIRST", awardOnly: false },
   { id: "SECOND-OLIVE-20", pool: "ALL_PARTICIPANTS", displayOrder: 2, name: "올리브영 상품권 2만원", unitAmount: 20000, quantity: 6, winnerCount: 6, drawStage: "SECOND", awardOnly: false },
-  { id: "BEST-REVIEWER-OUTBACK", pool: "AUDIENCE_JURY", displayOrder: 1, name: "베스트 리뷰어상 · 아웃백 상품권", unitAmount: 80000, quantity: 2, winnerCount: 2, drawStage: null, awardOnly: true },
+  { id: "BEST-REVIEWER-OUTBACK", pool: "ALL_PARTICIPANTS", displayOrder: 6, name: "아웃백 상품권 10만원", unitAmount: 100000, quantity: 2, winnerCount: 2, drawStage: "SECOND", awardOnly: false },
   { id: "THIRD-OLIVE-30", pool: "ALL_PARTICIPANTS", displayOrder: 3, name: "올리브영 상품권 3만원", unitAmount: 30000, quantity: 6, winnerCount: 6, drawStage: "THIRD", awardOnly: false },
   { id: "THIRD-AIRPODS", pool: "ALL_PARTICIPANTS", displayOrder: 4, name: "에어팟", unitAmount: 250000, quantity: 1, winnerCount: 1, drawStage: "THIRD", awardOnly: false },
   { id: "THIRD-COFFEE", pool: "ALL_PARTICIPANTS", displayOrder: 5, name: "커피 쿠폰", unitAmount: 10000, quantity: 5, winnerCount: 5, drawStage: "THIRD", awardOnly: false },

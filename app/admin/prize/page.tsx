@@ -12,8 +12,8 @@ import type { PrizeDrawStage, PrizeStageSnapshot } from "@/types/prize-stage";
 
 const stageMeta: Record<PrizeDrawStage, { label: string; title: string; detail: string }> = {
   FIRST: { label: "PART 1 FINALE", title: "1부 종료 추첨", detail: "1부 출석자 · 커피 쿠폰 15명" },
-  SECOND: { label: "PART 3 OPENING", title: "3부 시작 추첨", detail: "2부 출석자 · 올리브영 2만원 6명" },
-  THIRD: { label: "GRAND FINALE", title: "피날레 추첨", detail: "2부 출석자 · 올리브영 3만원 6명 · 에어팟 1명 / 청중평가단 커피 5명" },
+  SECOND: { label: "PART 3 OPENING", title: "잔여 경품 추첨", detail: "1·2부 출석자 · 올리브영 2만원 6명 / 아웃백 2명" },
+  THIRD: { label: "GRAND FINALE", title: "피날레 추첨", detail: "1·2부 출석자 · 올리브영 3만원 6명 · 에어팟 1명 · 커피 5명" },
 };
 
 const luckyCss = `
@@ -72,13 +72,24 @@ export default function PrizePage() {
   }), [inventory]);
 
   const drawItem = async (item: PrizeInventoryItem) => {
+    const stage = item.drawStage;
+    if (!stage) return;
+
+    const snapshot = stages.find((candidate) => candidate.stage === stage);
+    if (!snapshot?.locked || item.drawnCount >= item.winnerCount) return;
+
+    if (!window.confirm(
+      `${stageMeta[stage].title}: ${item.name} 당첨자 1명을 확정할까요?\\n확정된 당첨은 취소 없이 기록됩니다.`
+    )) return;
+
+    setSelectedStage(stage);
     setDrawingItemId(item.id);
     setFeedback("");
     setWinner(null);
     const response = await fetch("/api/prize-inventory", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId: state.eventId, prizeItemId: item.id, stage: selectedStage }),
+      body: JSON.stringify({ eventId: state.eventId, prizeItemId: item.id, stage }),
     });
     const payload = await response.json();
     if (!response.ok || !payload.ok) setFeedback(payload.error?.message ?? "경품 추첨에 실패했습니다.");
@@ -118,12 +129,12 @@ export default function PrizePage() {
   return <div className="admin-page">
     <SectionLabel label="PRIZE DRAW" title="경품 추첨" description="경품별 대상 풀에서 서버가 당첨자를 먼저 확정하고 전체 경품 중복 당첨을 차단합니다." />
     <OperationAlert level="INFO">각 추첨은 해당 부 출석자 Snapshot을 먼저 봉인한 뒤 서버에서 확정합니다. 화면 연출이나 운영자 조작은 당첨 결과를 바꾸지 않습니다.</OperationAlert>
-    <OperationAlert level="WARNING">운영 순서: 1부 QR 출석자 커피 1만원 15명 → 3부 시작 올리브영 2만원 6명 → 청중평가단 베스트 리뷰어상 아웃백 10만원 2명(별도 선정) → 피날레 2부 출석자 올리브영 3만원 6명·에어팟 1명 / 청중평가단 PCU 대상 커피 1만원 5명.</OperationAlert>
+    <OperationAlert level="WARNING">기존 1부 커피 15명 당첨 유지 · 추가 20명: 올리브영 2만원 6명, 아웃백 10만원 2명, 커피 1만원 5명, 올리브영 3만원 6명, 에어팟 1명. 1부 또는 2부 QR 출석자 대상, 중복 당첨 차단.</OperationAlert>
     <div className="admin-inline-actions"><Link className="admin-button admin-button--primary" href="/admin/prize/finale" target="_blank" rel="noopener noreferrer">행사장 전광판 열기 (새 탭)</Link></div>
 
     <section className="prize-stage-locks">{stages.map((stage) => <article className="admin-card" key={stage.stage}><div><small>{stageMeta[stage.stage].label}</small><strong>{stageMeta[stage.stage].title}</strong><span>{stageMeta[stage.stage].detail}</span></div><div>{stage.locked ? <><b>{stage.eligibleCount}명</b><StatusBadge tone="success">POOL LOCKED</StatusBadge><small>{stage.lockedAt ? new Date(stage.lockedAt).toLocaleTimeString("ko-KR") : ""}</small></> : <><b>미봉인</b><button className="admin-button admin-button--danger" type="button" disabled={lockingStage !== null} onClick={() => void lockStage(stage.stage)}>{lockingStage === stage.stage ? "봉인 중…" : `${stage.stage === "FIRST" ? "1부" : "2부"} 출석자 봉인`}</button></>}</div></article>)}</section>
 
-    <label className="admin-field prize-stage-selector">현재 추첨 순서<select value={selectedStage} onChange={(event) => setSelectedStage(event.target.value as PrizeDrawStage)}><option value="FIRST">1부 종료 · 커피 15명</option><option value="SECOND">3부 시작 · 올리브영 2만원 6명</option><option value="THIRD">피날레 · 올리브영 3만원 6명·에어팟 1명·평가단 커피 5명</option></select><small>봉인된 해당 순서의 출석자 안에서만 서버 추첨합니다.</small></label>
+    <label className="admin-field prize-stage-selector">현재 추첨 순서<select value={selectedStage} onChange={(event) => setSelectedStage(event.target.value as PrizeDrawStage)}><option value="FIRST">1부 커피 15명 (완료)</option><option value="SECOND">추가 추첨 · 올리브영 2만원 / 아웃백</option><option value="THIRD">피날레 · 올리브영 3만원 / 에어팟 / 커피 5명</option></select><small>봉인된 해당 순서의 출석자 안에서만 서버 추첨합니다.</small></label>
 
     <section className="admin-stat-grid prize-summary">
       <article><small>확정 경품</small><strong>{inventory.length}<span>종</span></strong></article>
@@ -140,9 +151,9 @@ export default function PrizePage() {
         return <article className={`admin-card prize-pool ${selectedStage === stage ? "is-selected" : ""}`} key={stage}>
           <PanelHeader label={stageMeta[stage].label} title={stageMeta[stage].title} aside={<span className="mock-note">{totalWinners}명 · {totalBudget.toLocaleString("ko-KR")}원</span>} />
           <div className="prize-pool__items">{items.map((item) => <div className="prize-pool__item" key={item.id}>
-            <div><strong>{item.name}{item.pool === "AUDIENCE_JURY" ? " · 청중평가단 전용" : " · 전체 참여자"}</strong><span>{item.unitAmount.toLocaleString("ko-KR")}원 × {item.quantity}개</span></div>
+            <div><strong>{item.name}{item.pool === "AUDIENCE_JURY" ? " · 평가단 전용" : " · 1·2부 출석자"}</strong><span>{item.unitAmount.toLocaleString("ko-KR")}원 × {item.quantity}개</span></div>
             <div className="prize-pool__progress"><b>{item.drawnCount}</b><span>/ {item.winnerCount}명</span></div>
-            <button className="admin-button admin-button--compact" type="button" disabled={selectedStage !== stage || drawingItemId !== null || item.drawnCount >= item.winnerCount || !stages.find((candidate) => candidate.stage === selectedStage)?.locked} onClick={() => void drawItem(item)}>{drawingItemId === item.id ? "서버 추첨 중…" : item.drawnCount >= item.winnerCount ? "추첨 완료" : selectedStage !== stage ? "다른 순서 경품" : "당첨자 1명 추첨"}</button>
+            <button className="admin-button admin-button--compact" type="button" disabled={drawingItemId !== null || item.drawnCount >= item.winnerCount || !stages.find((candidate) => candidate.stage === stage)?.locked} onClick={() => void drawItem(item)}>{drawingItemId === item.id ? "서버 추첨 중…" : item.drawnCount >= item.winnerCount ? "추첨 완료" : !stages.find((candidate) => candidate.stage === stage)?.locked ? "대상자 미봉인" : "당첨자 1명 추첨"}</button>
           </div>)}</div>
         </article>;
       })}

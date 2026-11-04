@@ -8,8 +8,8 @@ import { getMockPartAttendancePool } from "@/lib/attendance/mockPartAttendanceSt
 const stageOrder = ["FIRST", "SECOND", "THIRD"] as const;
 const labels: Record<PrizeDrawStage, string> = {
   FIRST: "1부 종료 · 커피 쿠폰 15명",
-  SECOND: "3부 시작 · 올리브영 2만원 6명",
-  THIRD: "피날레 · 3등·1등 경품",
+  SECOND: "잔여 경품 · 1·2부 출석자",
+  THIRD: "피날레 · 1·2부 출석자",
 };
 const mock = globalThis as typeof globalThis & { __prizeStageSnapshots?: Map<PrizeDrawStage, PrizeStageSnapshot>; __prizeStageMembers?: Map<PrizeDrawStage, Set<string>> };
 const mockStages = () => mock.__prizeStageSnapshots ??= new Map();
@@ -29,8 +29,7 @@ export async function getPrizeStages(eventId: string): Promise<PrizeStageSnapsho
 export async function lockPrizeStage(eventId: string, stage: PrizeDrawStage): Promise<PrizeStageSnapshot> {
   if (isMockRuntime()) {
     const existing = mockStages().get(stage); if (existing) return structuredClone(existing);
-    const part = stage === "FIRST" ? 1 : 2;
-    const members = new Set(getMockPartAttendancePool(eventId, part));
+    const members = new Set(stage === "FIRST" ? getMockPartAttendancePool(eventId, 1) : [...getMockPartAttendancePool(eventId, 1), ...getMockPartAttendancePool(eventId, 2)]);
     if (!members.size) throw new DomainError("INVALID_STATE", "현재 체크인된 참가자가 없어 대상자를 봉인할 수 없습니다.", 409);
     const saved = { stage, label: labels[stage], eligibleCount: members.size, lockedAt: new Date().toISOString(), locked: true } satisfies PrizeStageSnapshot;
     mockMembers().set(stage, members);

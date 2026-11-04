@@ -7,8 +7,8 @@ begin
   if (select count(*) from public.audience_attendance_sessions where event_id = event_uuid and exited_at is null) <> 12 then
     raise exception 'ASSERTION_FAILED: expected 12 active audience attendance sessions';
   end if;
-  if (select count(*) from public.audience_submissions where event_id = event_uuid) <> 12 then
-    raise exception 'ASSERTION_FAILED: expected exactly 12 persistent audience submissions';
+  if (select count(*) from public.audience_submissions where event_id = event_uuid) <> 0 then
+    raise exception 'ASSERTION_FAILED: audience voting must remain disabled';
   end if;
   if (select count(*) from public.judge_submissions where event_id = event_uuid and status = 'SUBMITTED') <> 3 then
     raise exception 'ASSERTION_FAILED: expected 3 submitted judge records';
@@ -22,4 +22,4 @@ begin
 end;
 $$;
 
-select 'PASS: 12 audience, 3 judges, duplicate protection, and revision preservation verified.' as result;
+select 'PASS: 12 attendance sessions, zero audience votes, and 3 judges verified.' as result;

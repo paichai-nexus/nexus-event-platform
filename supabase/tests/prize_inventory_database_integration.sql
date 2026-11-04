@@ -20,13 +20,15 @@ on conflict (user_id) do update set role = excluded.role, active = excluded.acti
 
 -- General-attendee prizes only; audience-jury prizes are excluded.
 select pg_temp.assert_true(
-  (select count(*) = 4
-       and sum(winner_count) = 27
-       and sum(unit_amount * quantity) = 690000
+  (select count(*) = 1
+       and sum(winner_count) = 15
+       and sum(unit_amount * quantity) = 150000
    from public.prize_inventory
    where event_id = '00000000-0000-4000-8000-000000000100'
      and status = 'CONFIRMED'
-     and pool = 'ALL_PARTICIPANTS'),
+     and pool = 'ALL_PARTICIPANTS'
+     and draw_stage = 'FIRST'
+     and name = '커피 쿠폰'),
   'general prize inventory must match approved general pool'
 );
 
@@ -60,7 +62,7 @@ select * from public.draw_prize_item_winner(
   '00000000-0000-4000-8000-000000000100',
   (select id from public.prize_inventory
    where event_id = '00000000-0000-4000-8000-000000000100'
-     and pool = 'ALL_PARTICIPANTS' and display_order = 2)
+     and pool = 'ALL_PARTICIPANTS' and display_order = 1)
 );
 reset role;
 
@@ -89,9 +91,9 @@ begin
         and pool = 'ALL_PARTICIPANTS' and display_order = 1)
     );
   exception when others then
-    if position('PRIZE_DRAW_COMPLETED' in sqlerrm) > 0 then blocked := true; else raise; end if;
+    if position('NO_ELIGIBLE_PARTICIPANT' in sqlerrm) > 0 then blocked := true; else raise; end if;
   end;
-  if not blocked then raise exception 'ASSERTION_FAILED: completed one-winner prize must reject another draw'; end if;
+  if not blocked then raise exception 'ASSERTION_FAILED: coffee draw must reject when no eligible participants remain'; end if;
 end;
 $$;
 reset role;

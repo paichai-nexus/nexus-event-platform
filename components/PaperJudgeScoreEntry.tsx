@@ -17,12 +17,13 @@ function draftsFor(teamId: string, records: PaperJudgeScore[]) {
 }
 
 export function PaperJudgeScoreEntry({ eventId, teams }: { eventId: string; teams: Team[] }) {
-  const activeTeams = teams.filter((team) => team.active && team.name).sort((a, b) => a.order - b.order);
+  const activeTeams = useMemo(() => teams.filter((team) => team.active && team.name).sort((a, b) => a.order - b.order), [teams]);
   const [teamId, setTeamId] = useState(activeTeams[0]?.id ?? "");
   const [records, setRecords] = useState<PaperJudgeScore[]>([]);
   const [drafts, setDrafts] = useState(empty);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const selectedTeamId = teamId || activeTeams[0]?.id || "";
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/judging/paper?eventId=${encodeURIComponent(eventId)}`, { cache: "no-store" });
@@ -30,25 +31,25 @@ export function PaperJudgeScoreEntry({ eventId, teams }: { eventId: string; team
     if (!response.ok || !payload.ok) { setFeedback(payload.error?.message ?? "종이 심사표 입력값을 불러오지 못했습니다."); return; }
     const nextRecords = payload.data as PaperJudgeScore[];
     setRecords(nextRecords);
-    setDrafts(draftsFor(teamId, nextRecords));
-  }, [eventId, teamId]);
+    setDrafts(draftsFor(selectedTeamId, nextRecords));
+  }, [eventId, selectedTeamId]);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
-  const selected = teams.find((team) => team.id === teamId) ?? null;
-  const selectedRecords = records.filter((record) => record.teamId === teamId);
+  const selected = teams.find((team) => team.id === selectedTeamId) ?? null;
+  const selectedRecords = records.filter((record) => record.teamId === selectedTeamId);
   const submitted = selectedRecords.filter((record) => record.status === "SUBMITTED").length;
   const totals = useMemo(() => ([1, 2, 3] as const).map((slot) => drafts[slot].documentScore + drafts[slot].presentationScore + drafts[slot].qnaScore), [drafts]);
 
   const change = (slot: 1 | 2 | 3, field: keyof Draft, value: number, maximum: number) => setDrafts((current) => ({ ...current, [slot]: { ...current[slot], [field]: Math.max(0, Math.min(maximum, Number.isFinite(value) ? value : 0)) } }));
 
   const save = async (status: "DRAFT" | "SUBMITTED") => {
-    if (!teamId || busy) return;
+    if (!selectedTeamId || busy) return;
     if (status === "SUBMITTED" && !window.confirm("심사위원 3명의 종이 점수를 제출하고 잠글까요? 제출 후에는 수정할 수 없습니다.")) return;
     setBusy(true); setFeedback("");
     try {
       for (const judgeSlot of [1, 2, 3] as const) {
-        const response = await fetch("/api/judging/paper", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId, teamId, judgeSlot, ...drafts[judgeSlot], status }) });
+        const response = await fetch("/api/judging/paper", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId, teamId: selectedTeamId, judgeSlot, ...drafts[judgeSlot], status }) });
         const payload = await response.json();
         if (!response.ok || !payload.ok) throw new Error(payload.error?.message ?? `심사위원 ${judgeSlot} 점수를 저장하지 못했습니다.`);
       }
@@ -61,7 +62,7 @@ export function PaperJudgeScoreEntry({ eventId, teams }: { eventId: string; team
   return <section className="admin-card paper-score-panel">
     <PanelHeader label="PAPER SCORE ENTRY" title="종이 심사표 수기 입력" aside={<StatusBadge tone={submitted === 3 ? "success" : submitted ? "warning" : "neutral"}>{submitted} / 3 제출</StatusBadge>} />
     <OperationAlert level="INFO">서류 50점 + 발표 100점 + 질의응답 50점 = 심사위원 1인당 200점입니다. 이 원점수는 공식 환산식 승인 전까지 최종 순위에 자동 반영되지 않습니다.</OperationAlert>
-    <label className="admin-field paper-score-panel__team">입력 대상 팀<select value={teamId} onChange={(event) => { setTeamId(event.target.value); setDrafts(draftsFor(event.target.value, records)); }}>{activeTeams.map((team) => <option key={team.id} value={team.id}>{String(team.order).padStart(2, "0")} · {teamDisplayName(team)}</option>)}</select></label>
+    <label className="admin-field paper-score-panel__team">입력 대상 팀<select value={selectedTeamId} disabled={!activeTeams.length} onChange={(event) => { setTeamId(event.target.value); setDrafts(draftsFor(event.target.value, records)); }}>{activeTeams.map((team) => <option key={team.id} value={team.id}>{String(team.order).padStart(2, "0")} · {teamDisplayName(team)}</option>)}</select></label>
     {selected && <div className="paper-score-panel__identity"><strong>{teamDisplayName(selected)}</strong><span>{selected.department ?? "학과 미등록"} · {selected.category === "STARTUP" ? "창업 부문" : "기업분석 부문"}</span></div>}
     <div className="paper-score-grid"><header><span>심사위원</span><b>서류 / 50</b><b>발표 / 100</b><b>질의응답 / 50</b><b>합계 / 200</b><b>상태</b></header>{([1, 2, 3] as const).map((slot, index) => {
       const record = selectedRecords.find((item) => item.judgeSlot === slot);

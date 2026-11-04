@@ -98,7 +98,7 @@ export default function AudienceReservationsPage() {
 
   return <div className="admin-page audience-admin">
     <SectionLabel label="AUDIENCE JURY" title="예약·서명·청중평가단 관리" description="Google Form 예약 명단을 불러오고 종이 서명, 현장 QR 인증, 학과별 PCU 발급 상태를 관리합니다." />
-    <OperationAlert level="WARNING">현재 리허설용 Mock 저장소입니다. Excel 원본은 CSV UTF-8로 저장해 불러오며, 서버 재시작 시 데이터가 초기화될 수 있습니다.</OperationAlert>
+    {state.runtimeMode === "mock" ? <OperationAlert level="WARNING">현재 리허설용 Mock 저장소입니다. 서버 재시작 시 데이터가 초기화될 수 있습니다.</OperationAlert> : <OperationAlert level="INFO">운영 Supabase에 영구 저장됩니다. 새로고침하거나 다른 운영 기기에서 접속해도 동일한 명단을 확인할 수 있습니다.</OperationAlert>}
     <OperationAlert level="INFO">Google Form 응답은 자동 동기화되지 않습니다. 응답을 XLSX/CSV로 내려받아 아래에서 가져온 뒤 종이 서명과 현장 인증을 확인하세요.</OperationAlert>
     <section className="stat-grid stat-grid--4 audience-admin__stats">
       <StatCard label="예약 명단" value={data.summary.total} detail="명" icon="☷" />

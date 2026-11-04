@@ -53,7 +53,7 @@ select * from public.draw_prize_item_winner(
 select * from public.draw_prize_item_winner(
   '00000000-0000-4000-8000-000000000100',
   (select id from public.prize_inventory where event_id = '00000000-0000-4000-8000-000000000100'
-    and pool = 'ALL_PARTICIPANTS' and display_order = 1)
+    and pool = 'ALL_PARTICIPANTS' and display_order = 4)
 );
 reset role;
 
@@ -79,7 +79,7 @@ begin
     perform public.draw_prize_item_winner(
       '00000000-0000-4000-8000-000000000100',
       (select id from public.prize_inventory where event_id = '00000000-0000-4000-8000-000000000100'
-        and pool = 'ALL_PARTICIPANTS' and display_order = 1)
+        and pool = 'ALL_PARTICIPANTS' and display_order = 4)
     );
   exception when others then
     if position('PRIZE_DRAW_COMPLETED' in sqlerrm) > 0 then blocked := true; else raise; end if;

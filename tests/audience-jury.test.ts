@@ -75,7 +75,7 @@ describe("학과별 청중평가단 선착순 등록", () => {
     expect(verifyMockAudienceJuryAuth("registration-session")).toBeNull();
   });
 
-  it("학과별 PCU-101~220 구간을 20명씩 발급하고 럭키드로우 후보를 격리한다", () => {
+  it("학과별 학과별 지정 PCU 구간을 20명씩 발급하고 럭키드로우 후보를 격리한다", () => {
     const departments = ["경영학과", "IT경영정보학과", "호텔항공경영학과", "관광경영학과", "항공서비스학과", "글로벌비즈니스학과"] as const;
     let participant = 0;
     departments.forEach((department) => {
@@ -92,9 +92,9 @@ describe("학과별 청중평가단 선착순 등록", () => {
     expect(pool).toHaveLength(120);
     expect(pool[0]?.participantCode).toBe("PCU-101");
     expect(pool[19]?.participantCode).toBe("PCU-120");
-    expect(pool[20]?.participantCode).toBe("PCU-121");
-    expect(pool[119]?.participantCode).toBe("PCU-220");
-    expect(pool.find((candidate) => candidate.department === "호텔항공경영학과")?.participantCode).toBe("PCU-201");
+    expect(pool[20]?.participantCode).toBe("PCU-201");
+    expect(pool[119]?.participantCode).toBe("PCU-620");
+    expect(pool.find((candidate) => candidate.department === "호텔항공경영학과")?.participantCode).toBe("PCU-601");
     expect(pool.some((candidate) => candidate.participantCode === "PCU-100")).toBe(false);
     expect(new Set(pool.map((candidate) => candidate.participantCode))).toHaveLength(120);
   });

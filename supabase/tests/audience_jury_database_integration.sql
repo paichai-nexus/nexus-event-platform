@@ -185,11 +185,11 @@ $$;
 reset role;
 
 select pg_temp.assert_true(
-  (select count(*) = 20 and min(pcu_code) = 'PCU-121' and max(pcu_code) = 'PCU-140'
+  (select count(*) = 20 and min(pcu_code) = 'PCU-201' and max(pcu_code) = 'PCU-220'
    from public.audience_jury_reservations
    where event_id = '00000000-0000-4000-8000-000000000100'
      and department = 'IT경영정보학과' and pcu_code is not null),
-  'IT department allocation must stay inside PCU-121 through PCU-140'
+  'IT department allocation must stay inside PCU-201 through PCU-220'
 );
 
 rollback;

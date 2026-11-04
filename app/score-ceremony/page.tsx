@@ -47,11 +47,14 @@ export default function ScoreCeremonyPage() {
   const [showNames, setShowNames] = useState(true);
 
   const load = useCallback(async () => {
-    if (!state.eventId || !state.snapshotReady) return;
+    // 행사 Snapshot과 별개로 제출·잠금 점수를 직접 조회한다.
+    const eventId = state.snapshotReady
+      ? state.eventId
+      : "00000000-0000-4000-8000-000000000100";
 
     try {
       const response = await fetch(
-        `/api/scoring/live?eventId=${encodeURIComponent(state.eventId)}`,
+        `/api/scoring/live?eventId=${encodeURIComponent(eventId)}`,
         { cache: "no-store", credentials: "same-origin" }
       );
 

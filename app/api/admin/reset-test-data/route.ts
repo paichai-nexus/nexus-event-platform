@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { authorizeRoles } from "@/lib/auth/authorize";
 import { DomainError, toErrorResponse } from "@/lib/errors/domainError";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ const inputSchema = z.object({
 });
 
 async function getClient() {
-  const db = await createSupabaseServerClient();
+  const db = createSupabaseAdminClient();
   if (!db) throw new DomainError("DATABASE_ERROR", "DB 연결이 없습니다.", 503);
   return db;
 }

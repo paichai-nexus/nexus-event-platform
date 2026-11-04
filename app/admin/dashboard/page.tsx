@@ -40,12 +40,12 @@ export default function DashboardPage() {
     {
       step: "01", title: "1부 출석", time: "행사 입장", status: attendance?.partOneCount ? "진행 중" : "대기", tone: attendance?.partOneCount ? "success" : "neutral",
       value: `${attendance?.partOneCount ?? 0}명`, detail: "QR 출석 · 학과별 PCU 선착순 발급", next: "스크린에 1부 QR을 띄우고 출석을 확인하세요.",
-      href: "/admin/check-in", action: "1부 출석 관리", secondaryHref: "/admin/audience", secondaryAction: "PCU 명단 확인",
+      href: "/admin/check-in?part=1", action: "1부 QR 보기", secondaryHref: "/admin/audience", secondaryAction: "PCU 명단 확인",
     },
     {
       step: "02", title: "2부 출석", time: "2부 시작 전", status: attendance?.partTwoCount ? "진행 중" : "대기", tone: attendance?.partTwoCount ? "success" : "neutral",
       value: `${attendance?.partTwoCount ?? 0}명`, detail: `1·2부 모두 출석 ${attendance?.bothCount ?? 0}명`, next: "2부 QR을 띄우고 럭키드로우 대상자를 확보하세요.",
-      href: "/admin/check-in", action: "2부 출석 관리",
+      href: "/admin/check-in?part=2", action: "2부 QR 보기",
     },
     {
       step: "03", title: "청중평가", time: "15:00 / 16:00", status: voteStatus, tone: voteTone,

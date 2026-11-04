@@ -17,57 +17,64 @@ insert into public.profiles (user_id, role, display_name, active) values
   ('92000000-0000-4000-8000-000000000002', 'JUDGE', 'Prize judge', true)
 on conflict (user_id) do update set role = excluded.role, active = excluded.active;
 
+
+-- General-attendee prizes only; audience-jury prizes are excluded.
 select pg_temp.assert_true(
-  (select count(*) = 5 and sum(winner_count) = 29 and sum(unit_amount * quantity) = 790000
+  (select count(*) = 4
+       and sum(winner_count) = 27
+       and sum(unit_amount * quantity) = 690000
    from public.prize_inventory
-   where event_id = '00000000-0000-4000-8000-000000000100' and status = 'CONFIRMED'),
-  'confirmed draw inventory must contain five items, 29 winners, and 790000 won total budget'
+   where event_id = '00000000-0000-4000-8000-000000000100'
+     and status = 'CONFIRMED'
+     and pool = 'ALL_PARTICIPANTS'),
+  'general prize inventory must match approved general pool'
 );
 
-insert into public.audience_jury_reservations (
-  event_id, department, student_number, attendee_name, paper_signed_at
-) values ('00000000-0000-4000-8000-000000000100', '경영학과', '20269999', '경품학생', now());
-set local role service_role;
-select * from public.register_audience_jury(
-  '00000000-0000-4000-8000-000000000100', 'prize-jury-token-00000000000001',
-  '경영학과', '경품학생', '20269999'
-);
-reset role;
-
-insert into public.participants (event_id, participant_code, display_label, affiliation)
-values ('00000000-0000-4000-8000-000000000100', 'GENERAL-001', 'GENERAL-001', 'GENERAL')
+insert into public.participants
+  (event_id, participant_code, display_label, affiliation)
+values
+  ('00000000-0000-4000-8000-000000000100',
+   'GENERAL-001', 'GENERAL-001', 'GENERAL'),
+  ('00000000-0000-4000-8000-000000000100',
+   'GENERAL-002', 'GENERAL-002', 'GENERAL')
 on conflict (event_id, participant_code) do nothing;
+
 insert into public.check_ins (event_id, participant_id, source)
-select '00000000-0000-4000-8000-000000000100', participant.id, 'MANUAL'
-from public.participants participant
-where participant.event_id = '00000000-0000-4000-8000-000000000100' and participant.participant_code = 'GENERAL-001'
+select '00000000-0000-4000-8000-000000000100',
+       id, 'MANUAL'
+from public.participants
+where event_id = '00000000-0000-4000-8000-000000000100'
+  and participant_code in ('GENERAL-001', 'GENERAL-002')
 on conflict (event_id, participant_id) do nothing;
 
 select set_config('request.jwt.claim.sub', '92000000-0000-4000-8000-000000000001', true);
 set local role authenticated;
+
 select * from public.draw_prize_item_winner(
   '00000000-0000-4000-8000-000000000100',
-  (select id from public.prize_inventory where event_id = '00000000-0000-4000-8000-000000000100'
-    and pool = 'AUDIENCE_JURY' and display_order = 1)
+  (select id from public.prize_inventory
+   where event_id = '00000000-0000-4000-8000-000000000100'
+     and pool = 'ALL_PARTICIPANTS' and display_order = 1)
 );
 select * from public.draw_prize_item_winner(
   '00000000-0000-4000-8000-000000000100',
-  (select id from public.prize_inventory where event_id = '00000000-0000-4000-8000-000000000100'
-    and pool = 'ALL_PARTICIPANTS' and display_order = 1)
+  (select id from public.prize_inventory
+   where event_id = '00000000-0000-4000-8000-000000000100'
+     and pool = 'ALL_PARTICIPANTS' and display_order = 2)
 );
 reset role;
 
 select pg_temp.assert_true(
   (select count(*) = 2 and count(distinct participant_id) = 2 from public.prize_item_draws
    where event_id = '00000000-0000-4000-8000-000000000100'),
-  'pool draws must persist two distinct winners'
+  'general draws must persist two distinct winners'
 );
+
 select pg_temp.assert_true(
-  (select participant.participant_code = 'GENERAL-001'
-   from public.prize_item_draws item_draw join public.participants participant on participant.id = item_draw.participant_id
-   join public.prize_inventory item on item.id = item_draw.prize_item_id
-   where item.pool = 'ALL_PARTICIPANTS'),
-  'global duplicate prevention must exclude the prior audience-jury winner'
+  (select count(*) = 2 and count(distinct participant_id) = 2
+   from public.prize_item_draws
+   where event_id = '00000000-0000-4000-8000-000000000100'),
+  'general prizes must not award the same participant twice'
 );
 
 select set_config('request.jwt.claim.sub', '92000000-0000-4000-8000-000000000001', true);

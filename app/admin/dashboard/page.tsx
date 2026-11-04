@@ -88,7 +88,7 @@ export default function DashboardPage() {
 
     <section className="admin-card ops-quick-links">
       <div><small>운영 보조</small><strong>필요할 때만 여세요</strong></div>
-      <nav><Link href="/admin/teams">본선 12팀 확인</Link><Link href="/admin/display">현장 전광판</Link><Link href="/admin/results">결과·CSV</Link><Link href="/admin/settings">운영 설정</Link></nav>
+      <nav><Link href="/admin/teams">본선 12팀 확인</Link><Link href="/admin/display">현장 전광판</Link><Link href="/admin/results">결과·CSV</Link><Link href="/admin/settings">운영 설정</Link><Link href="/admin/reset-test-data">리허설 데이터 초기화</Link></nav>
     </section>
   </div>;
 }

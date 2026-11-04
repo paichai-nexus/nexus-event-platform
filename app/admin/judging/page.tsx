@@ -15,7 +15,7 @@ export default function JudgingAdminPage() {
   const submitted = state.judgeProgress.length - missing.length;
   const totalCompleted = state.judgeProgress.reduce((sum, judge) => sum + judge.completed, 0);
   const totalSlots = state.judgeProgress.reduce((sum, judge) => sum + judge.total, 0);
-  const averageProgress = Math.round((totalCompleted / totalSlots) * 100);
+  const averageProgress = totalSlots > 0 ? Math.round((totalCompleted / totalSlots) * 100) : 0;
   const currentTeam = state.teams.find((team) => team.status === "PRESENTING") ?? state.teams[0];
   return (
     <div className="admin-page">
@@ -29,10 +29,10 @@ export default function JudgingAdminPage() {
         </article>
         <aside className="admin-card current-judging-card">
           <PanelHeader label="CURRENT TEAM" title="현재 심사 대상" aside={<StatusBadge tone="blue">발표 중</StatusBadge>} />
-          <div className="current-judging-card__order">{String(currentTeam.order).padStart(2, "0")}</div>
-          <strong>{teamDisplayName(currentTeam)}</strong>
-          <p>{currentTeam.category === "STARTUP" ? "창업 부문" : "기업분석 부문"}</p>
-          <dl><div><dt>발표 순서</dt><dd>{currentTeam.order}번째</dd></div><div><dt>평가 기준</dt><dd>임시안 · 미확정</dd></div><div><dt>저장 방식</dt><dd>Server Snapshot</dd></div></dl>
+          <div className="current-judging-card__order">{currentTeam ? String(currentTeam.order).padStart(2, "0") : "—"}</div>
+          <strong>{currentTeam ? teamDisplayName(currentTeam) : "팀 정보 확인 중"}</strong>
+          <p>{currentTeam?.category === "STARTUP" ? "창업 부문" : "기업분석 부문"}</p>
+          <dl><div><dt>발표 순서</dt><dd>{currentTeam?.order ?? "—"}번째</dd></div><div><dt>평가 기준</dt><dd>임시안 · 미확정</dd></div><div><dt>저장 방식</dt><dd>Server Snapshot</dd></div></dl>
           <OperationAlert level="INFO">세부 평가항목과 배점은 공식 확정 전입니다.</OperationAlert>
         </aside>
       </section>

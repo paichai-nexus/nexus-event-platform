@@ -15,7 +15,7 @@ type Tab = typeof tabs[number];
 
 export default function ResultsPage() {
   const { state } = useEventOps();
-  const [tab, setTab] = useState<Tab>("CHECK-IN");
+  const [tab, setTab] = useState<Tab>("FINAL RESULT");
   const rows = useMemo<Array<Record<string, string | number | boolean>>>(() => {
     if (tab === "CHECK-IN") return state.checkIns.map((item) => ({ participantId: item.participantId, checkedInAt: item.time }));
     if (tab === "JUDGING") return state.judgeProgress.map((judge) => ({ judge: judge.id, completed: judge.completed, total: judge.total }));

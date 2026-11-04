@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useEventOps } from "@/features/event/context/EventOpsProvider";
 import { teamDisplayName } from "@/features/event/data/teamSlots";
 import { PaperJudgeScoreEntry } from "@/components/PaperJudgeScoreEntry";
+import { LiveScoringBoard } from "@/components/LiveScoringBoard";
 
 export default function JudgingAdminPage() {
   const { state } = useEventOps();
@@ -37,6 +38,7 @@ export default function JudgingAdminPage() {
         </aside>
       </section>
       <PaperJudgeScoreEntry eventId={state.eventId} teams={state.teams} />
+      <LiveScoringBoard eventId={state.eventId} />
     </div>
   );
 }

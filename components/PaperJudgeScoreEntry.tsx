@@ -44,17 +44,35 @@ export function PaperJudgeScoreEntry({ eventId, teams }: { eventId: string; team
 
   const save = async (status: "DRAFT" | "SUBMITTED") => {
     if (!teamId || busy) return;
+
+    const remainingSlots = ([1, 2, 3] as const).filter(
+      (slot) => !selectedRecords.some(
+        (record) => record.judgeSlot === slot &&
+          record.status === "SUBMITTED"
+      )
+    );
+
+    if (!remainingSlots.length) {
+      setFeedback("심사위원 3명의 점수가 모두 제출·잠금됐습니다.");
+      return;
+    }
+
     if (status === "SUBMITTED" && !window.confirm("심사위원 3명의 종이 점수를 제출하고 잠글까요? 제출 후에는 수정할 수 없습니다.")) return;
     setBusy(true); setFeedback("");
     try {
-      for (const judgeSlot of [1, 2, 3] as const) {
+      for (const judgeSlot of remainingSlots) {
         const response = await fetch("/api/judging/paper", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId, teamId, judgeSlot, ...drafts[judgeSlot], status }) });
         const payload = await response.json();
         if (!response.ok || !payload.ok) throw new Error(payload.error?.message ?? `심사위원 ${judgeSlot} 점수를 저장하지 못했습니다.`);
       }
       await load();
       setFeedback(status === "SUBMITTED" ? "심사위원 3명의 종이 점수가 제출·잠금 처리되었습니다." : "종이 심사표 점수를 임시 저장했습니다.");
-    } catch (error) { setFeedback(error instanceof Error ? error.message : "종이 심사표 점수를 저장하지 못했습니다."); }
+    } catch (error) {
+      try { await load(); } catch { /* 조회 실패 시 기존 안내 유지 */ }
+      setFeedback(
+        `${error instanceof Error ? error.message : "저장 오류"} · 서버 제출 상태를 확인하고 미제출 심사위원만 다시 제출해주세요.`
+      );
+    }
     finally { setBusy(false); }
   };
 
@@ -68,7 +86,7 @@ export function PaperJudgeScoreEntry({ eventId, teams }: { eventId: string; team
       const locked = record?.status === "SUBMITTED";
       return <div key={slot}><strong>심사위원 {slot}</strong><input aria-label={`심사위원 ${slot} 서류점수`} type="number" min={0} max={50} step={1} disabled={locked || busy} value={drafts[slot].documentScore} onChange={(event) => change(slot, "documentScore", Number(event.target.value), 50)} /><input aria-label={`심사위원 ${slot} 발표점수`} type="number" min={0} max={100} step={1} disabled={locked || busy} value={drafts[slot].presentationScore} onChange={(event) => change(slot, "presentationScore", Number(event.target.value), 100)} /><input aria-label={`심사위원 ${slot} 질의응답점수`} type="number" min={0} max={50} step={1} disabled={locked || busy} value={drafts[slot].qnaScore} onChange={(event) => change(slot, "qnaScore", Number(event.target.value), 50)} /><b>{totals[index]}</b><StatusBadge tone={locked ? "success" : record ? "warning" : "neutral"}>{locked ? "제출 잠금" : record ? "임시저장" : "미입력"}</StatusBadge></div>;
     })}<footer><span>전문심사 원점수 합계</span><strong>{totals.reduce((sum, score) => sum + score, 0)} / 600</strong></footer></div>
-    <div className="paper-score-panel__actions"><button className="admin-button" type="button" disabled={busy || submitted > 0} onClick={() => void save("DRAFT")}>임시 저장</button><button className="admin-button admin-button--primary" type="button" disabled={busy || submitted > 0} onClick={() => void save("SUBMITTED")}>{busy ? "저장 중…" : "3명 점수 제출·잠금"}</button></div>
+    <div className="paper-score-panel__actions"><button className="admin-button" type="button" disabled={busy || submitted === 3} onClick={() => void save("DRAFT")}>임시 저장</button><button className="admin-button admin-button--primary" type="button" disabled={busy || submitted === 3} onClick={() => void save("SUBMITTED")}>{busy ? "저장 중…" : "3명 점수 제출·잠금"}</button></div>
     <p className="participant-feedback" role="status">{feedback}</p>
   </section>;
 }

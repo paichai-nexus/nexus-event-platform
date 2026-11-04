@@ -26,17 +26,17 @@ export async function GET(request: Request) {
     const event = await db.from("events").select("id,mode,status,result_status").eq("id",eventId).single();
     if (event.error || !event.data) throw new DomainError("NOT_FOUND","행사를 찾을 수 없습니다.",404);
     const [attendance,pcu,ballots,paper,draws,stages,oldDraws,checkins,submissions,judges,results] = await Promise.all([
-      db.from("part_attendance_entries").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("audience_jury_reservations").select("id",{count:"exact",head:true}).eq("event_id",eventId).not("pcu_code","is",null),
-      db.from("audience_rank_ballots").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("paper_judge_scores").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("prize_item_draws").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("prize_stage_snapshots").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("prize_draws").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("check_ins").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("audience_submissions").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("judge_submissions").select("id",{count:"exact",head:true}).eq("event_id",eventId),
-      db.from("result_snapshots").select("id",{count:"exact",head:true}).eq("event_id",eventId),
+      db.from("part_attendance_entries").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("audience_jury_reservations").select("id",{count:"exact",head:false}).eq("event_id",eventId).not("pcu_code","is",null),
+      db.from("audience_rank_ballots").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("paper_judge_scores").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("prize_item_draws").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("prize_stage_snapshots").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("prize_draws").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("check_ins").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("audience_submissions").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("judge_submissions").select("id",{count:"exact",head:false}).eq("event_id",eventId),
+      db.from("result_snapshots").select("id",{count:"exact",head:false}).eq("event_id",eventId),
     ]);
     const queries = [attendance,pcu,ballots,paper,draws,stages,oldDraws,checkins,submissions,judges,results];
     const tableNames = [
